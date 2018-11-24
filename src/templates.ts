@@ -1,5 +1,5 @@
 
-export const COMPONENT = `
+export const COMPONENT: string = `
 import {LitElement, html} from '@polymer/lit-element';
 
 export default class <%=componentName%> extends LitElement {
@@ -30,7 +30,7 @@ export default class <%=componentName%> extends LitElement {
 customElements.define('<%=tagName%>', <%=componentName%>);
 `;
 
-export const APP = `
+export const APP: string = `
 import {LitElement, html} from '@polymer/lit-element';
 import {connect} from 'pwa-helpers/connect-mixin.js';
 import {installRouter} from 'pwa-helpers/router.js';

@@ -1,10 +1,8 @@
-import "@babel/polyfill";
-
 const gulp = require('gulp');
-import path from 'path';
-import fs from 'fs';
-import _ from 'lodash';
-import through2 from 'through2';
+const fs = require('fs');
+const path = require('path');
+const _ = require('lodash');
+const through2 = require('through2');
 import yaml from 'js-yaml';
 import rename from 'gulp-rename';
 import less from 'less';
@@ -24,8 +22,8 @@ const ROUTES_META_PATH = 'sambal/routes.yml';
 const SRC_PATH = 'js';
 const COMPONENT_OUTPUT = `${SRC_PATH}/components`;
 const THEME_OUTPUT = `${SRC_PATH}/theme`;
-const site = {};
-const ROUTES = [];
+const site: any = {};
+const ROUTES: any[] = [];
 
 const COMPONENT_TEMPLATE = _.template(COMPONENT);
 const APP_TEMPLATE = _.template(APP);
@@ -116,7 +114,8 @@ function iterateMetas() {
                     const property = {
                         name: propName,
                         type: prop.type,
-                        attribute: prop.attribute ? true : false
+                        attribute: prop.attribute ? true : false,
+                        value: ''
                     };
                     if (typeof(prop.value) === 'string' && prop.value.indexOf('site.') === 0) {
                         property.value = getPropertyValue(prop.type, evalVar(prop.value));

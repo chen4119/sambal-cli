@@ -65,4 +65,6 @@ sambal/
 dist/
 themes/
 js/
+data/
+test/
 index.js
