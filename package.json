@@ -2,6 +2,7 @@
     "name": "sambal-cli",
     "version": "0.0.1",
     "description": "A static site generator built with web components",
+    "main": "index.js",
     "repository": {
         "type": "git",
         "url": "https://github.com/chen4119/sambal"

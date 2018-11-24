@@ -65,4 +65,4 @@ sambal/
 dist/
 themes/
 js/
-./index.js
+index.js

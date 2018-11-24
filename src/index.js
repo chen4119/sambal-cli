@@ -5,11 +5,9 @@ import {generate} from './generator';
 program
     .version(version)
     .option('-g, --generate', 'Generate javascript files')
-
     .parse(process.argv);
 
 if (program.generate) {
-    console.log('generating');
     generate();
 }
 
