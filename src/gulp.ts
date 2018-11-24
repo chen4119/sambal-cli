@@ -1,6 +1,6 @@
-const gulp = require('gulp');
-const through2 = require('through2');
-const rename = require('gulp-rename');
+import gulp from "gulp";
+import through2 from "through2";
+import rename from "gulp-rename";
 
 gulp.on('error', (err) => {
     console.log('error');

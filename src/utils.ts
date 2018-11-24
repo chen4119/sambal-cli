@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from 'fs';
 
 export function getComponentNameFromTagName(tagName: string) {
     const names = tagName.split('-').map((name) => name.charAt(0).toUpperCase() + name.slice(1));
@@ -18,7 +18,7 @@ export function asyncWriteFile(outputPath: string, content: string | Object) {
         if (typeof(content) === "object") {
             contentStr = JSON.stringify(content);
         }
-        fs.writeFile(outputPath, contentStr, 'utf8', function(err, data) {
+        fs.writeFile(outputPath, contentStr, 'utf8', function(err) {
             if (err) {
                 console.log(err);
                 reject(err);

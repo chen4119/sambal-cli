@@ -1,8 +1,8 @@
-const path = require('path');
-const _ = require('lodash');
-const yaml = require('js-yaml');
-const less = require('less');
-const marked = require('marked');
+import path from 'path';
+import _ from "lodash";
+import yaml from "js-yaml";
+import less from "less";
+import marked from "marked";
 
 import {gulpSeries, gulpSrc, gulpRename, gulpDest} from './gulp';
 import {COMPONENT, APP} from './templates';

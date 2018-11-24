@@ -1,4 +1,4 @@
-const program = require('commander');
+import program from "commander";
 import {version} from "../package.json";
 import {generate} from "./generator";
 import {collect} from "./collector";

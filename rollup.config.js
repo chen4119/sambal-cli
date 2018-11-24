@@ -13,6 +13,8 @@ export default {
         }
     ],
     external: [
+        "path",
+        "fs",
         ...Object.keys(pkg.dependencies || {}),
         ...Object.keys(pkg.peerDependencies || {}),
     ],

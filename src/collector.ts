@@ -1,6 +1,6 @@
-const matter = require('gray-matter');
-const path = require('path');
-const shell = require('shelljs');
+import matter from 'gray-matter';
+import path from "path";
+import shell from 'shelljs';
 import {gulpSeries, asyncGlob} from './gulp';
 import {asyncWriteFile} from './utils';
 import {UserDefinedCollection, Partition, Chunk, Collection, Sort} from './types';
