@@ -24,7 +24,7 @@
         "sambal": "./bin/sambal"
     },
     "scripts": {
-        "start": "./bin/sambal -c",
+        "start": "./bin/sambal -g",
         "build": "rollup -c"
     },
     "dependencies": {

@@ -1,39 +1,32 @@
-const gulp = require('gulp');
-const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
-const through2 = require('through2');
-import yaml from 'js-yaml';
-import rename from 'gulp-rename';
-import less from 'less';
-import marked from 'marked';
+const yaml = require('js-yaml');
+const less = require('less');
+const marked = require('marked');
 
+import {gulpSeries, gulpSrc, gulpRename, gulpDest} from './gulp';
 import {COMPONENT, APP} from './templates';
 import {
     getComponentNameFromTagName,
-    getPropertyValue
+    getPropertyValue,
+    asyncWriteFile
 } from './utils';
 
-const componentMetaMap = new Map();
-const COMPONENT_SOURCE = 'components';
-const THEME_SOURCE = 'themes';
-const SITE_META_PATH = 'sambal/site.yml';
-const ROUTES_META_PATH = 'sambal/routes.yml';
-const SRC_PATH = 'js';
-const COMPONENT_OUTPUT = `${SRC_PATH}/components`;
-const THEME_OUTPUT = `${SRC_PATH}/theme`;
+const componentMetaMap = new Map<string, any>();
+const COMPONENT_SOURCE: string = 'components';
+const THEME_SOURCE: string = 'themes';
+const SITE_META_PATH: string = 'sambal/site.yml';
+const ROUTES_META_PATH: string = 'sambal/routes.yml';
+const SRC_PATH: string = 'js';
+const COMPONENT_OUTPUT: string = `${SRC_PATH}/components`;
+const THEME_OUTPUT: string = `${SRC_PATH}/theme`;
 const site: any = {};
 const ROUTES: any[] = [];
 
 const COMPONENT_TEMPLATE = _.template(COMPONENT);
 const APP_TEMPLATE = _.template(APP);
 
-gulp.on('error', (err) => {
-    console.log('error');
-    console.log(err);
-});
-
-const build = gulp.series(
+const build = gulpSeries(
     getSiteMeta,
     getRoutes,
     iterateMetas,
@@ -50,46 +43,38 @@ export function generate() {
 }
 
 function getSiteMeta() {
-    return gulp.src(SITE_META_PATH)
-    .pipe(through2.obj(function(file, enc, cb) {
-        if (file.isBuffer()) {
-            const siteMeta = yaml.safeLoad(file.contents.toString());
-            Object.assign(site, siteMeta);
-        }
-        cb(null, file);
-    }))
+    return gulpSrc(SITE_META_PATH, (file) => {
+        const siteMeta = yaml.safeLoad(file.contents.toString());
+        Object.assign(site, siteMeta);
+    });
 }
 
 function getRoutes() {
     const theme = site.theme;
     const themeTagName = `${theme}-theme`;
-    return gulp.src(ROUTES_META_PATH)
-    .pipe(through2.obj(function(file, enc, cb) {
-        if (file.isBuffer()) {
-            const routesMeta = yaml.safeLoad(file.contents.toString());
-            for (let i = 0; i < routesMeta.length; i++) {
-                const route = routesMeta[i].route;
-                let template = `<${themeTagName}>`;
-                console.log(route);
-                for (let j = 0; j < route.slots.length; j++) {
-                    const slot = route.slots[j];
-                    const slotName = Object.keys(slot)[0];
-                    const componentTagName = slot[slotName];
-                    if (slotName === 'main') {
-                        template += `<${componentTagName}></${componentTagName}>`;
-                    } else {
-                        template += `<${componentTagName} slot="${slotName}"></${componentTagName}>`;
-                    }
+    return gulpSrc(ROUTES_META_PATH, (file) => {
+        const routesMeta = yaml.safeLoad(file.contents.toString());
+        for (let i = 0; i < routesMeta.length; i++) {
+            const route = routesMeta[i].route;
+            let template = `<${themeTagName}>`;
+            console.log(route);
+            for (let j = 0; j < route.slots.length; j++) {
+                const slot = route.slots[j];
+                const slotName = Object.keys(slot)[0];
+                const componentTagName = slot[slotName];
+                if (slotName === 'main') {
+                    template += `<${componentTagName}></${componentTagName}>`;
+                } else {
+                    template += `<${componentTagName} slot="${slotName}"></${componentTagName}>`;
                 }
-                template += `</${themeTagName}>`;
-                ROUTES.push({
-                    path: route.path,
-                    template: template
-                });
             }
+            template += `</${themeTagName}>`;
+            ROUTES.push({
+                path: route.path,
+                template: template
+            });
         }
-        cb(null, file);
-    }))
+    });
 }
 
 function evalVar(variable){
@@ -98,64 +83,56 @@ function evalVar(variable){
 
 function iterateMetas() {
     const theme = site.theme;
-    return gulp.src([`${COMPONENT_SOURCE}/**/*.yml`, `${THEME_SOURCE}/${theme}/**/*.yml`])
-    .pipe(through2.obj(function(file, enc, cb) {
-        if (file.isBuffer()) {
-            const tagName = path.basename(file.basename, '.yml');
-            console.log(tagName);
-            const componentMeta = yaml.safeLoad(file.contents.toString());
-            console.log(componentMeta);
-            const properties = [];
-            if (componentMeta.properties) {
-                const propKeys = Object.keys(componentMeta.properties);
-                for (let i = 0; i < propKeys.length; i++) {
-                    const propName = propKeys[i];
-                    const prop = componentMeta.properties[propName];
-                    const property = {
-                        name: propName,
-                        type: prop.type,
-                        attribute: prop.attribute ? true : false,
-                        value: ''
-                    };
-                    if (typeof(prop.value) === 'string' && prop.value.indexOf('site.') === 0) {
-                        property.value = getPropertyValue(prop.type, evalVar(prop.value));
-                    } else {
-                        property.value = getPropertyValue(prop.type, prop.value);
-                    }
-                    properties.push(property);
+    return gulpSrc([`${COMPONENT_SOURCE}/**/*.yml`, `${THEME_SOURCE}/${theme}/**/*.yml`], (file) => {
+        const tagName = path.basename(file.basename, '.yml');
+        console.log(tagName);
+        const componentMeta = yaml.safeLoad(file.contents.toString());
+        console.log(componentMeta);
+        const properties = [];
+        if (componentMeta.properties) {
+            const propKeys = Object.keys(componentMeta.properties);
+            for (let i = 0; i < propKeys.length; i++) {
+                const propName = propKeys[i];
+                const prop = componentMeta.properties[propName];
+                const property = {
+                    name: propName,
+                    type: prop.type,
+                    attribute: prop.attribute ? true : false,
+                    value: ''
+                };
+                if (typeof(prop.value) === 'string' && prop.value.indexOf('site.') === 0) {
+                    property.value = getPropertyValue(prop.type, evalVar(prop.value));
+                } else {
+                    property.value = getPropertyValue(prop.type, prop.value);
                 }
-            }
-            if (componentMetaMap.has(tagName)) {
-                const meta = componentMetaMap.get(tagName);
-                meta.properties = properties;
-            } else {
-                componentMetaMap.set(tagName, {
-                    properties: properties
-                });
+                properties.push(property);
             }
         }
-        cb(null, file);
-    }));
+        if (componentMetaMap.has(tagName)) {
+            const meta = componentMetaMap.get(tagName);
+            meta.properties = properties;
+        } else {
+            componentMetaMap.set(tagName, {
+                properties: properties
+            });
+        }
+    });
 }
 
 function iterateStyleSheets() {
     const theme = site.theme;
-    return gulp.src([`${COMPONENT_SOURCE}/**/*.less`, `${THEME_SOURCE}/${theme}/**/*.less`])
-    .pipe(through2.obj(async function(file, enc, cb) {
-        if (file.isBuffer()) {
-            const tagName = path.basename(file.basename, '.less');
-            const output = await less.render(file.contents.toString());
-            if (componentMetaMap.has(tagName)) {
-                const meta = componentMetaMap.get(tagName);
-                meta.styleSheet = output.css;
-            } else {
-                componentMetaMap.set(tagName, {
-                    styleSheet: output.css
-                });
-            }
+    return gulpSrc([`${COMPONENT_SOURCE}/**/*.less`, `${THEME_SOURCE}/${theme}/**/*.less`], async (file) => {
+        const tagName = path.basename(file.basename, '.less');
+        const output = await less.render(file.contents.toString());
+        if (componentMetaMap.has(tagName)) {
+            const meta = componentMetaMap.get(tagName);
+            meta.styleSheet = output.css;
+        } else {
+            componentMetaMap.set(tagName, {
+                styleSheet: output.css
+            });
         }
-        cb(null, file);
-    }));
+    });
 }
 
 function transformTemplate(file, sourceFolder) {
@@ -189,32 +166,20 @@ function transformTemplate(file, sourceFolder) {
 }
 
 function iterateComponentTemplates() {
-    return gulp.src([`${COMPONENT_SOURCE}/**/*.html`, `${COMPONENT_SOURCE}/**/*.md`])
-    .pipe(through2.obj(function(file, enc, cb) {
-        if (file.isBuffer()) {
-            transformTemplate(file, 'components');
-        }
-        cb(null, file);
-    }))
-    .pipe(rename(function (path) {
-        path.extname = ".js";
-    }))
-    .pipe(gulp.dest(COMPONENT_OUTPUT));
+    return gulpSrc([`${COMPONENT_SOURCE}/**/*.html`, `${COMPONENT_SOURCE}/**/*.md`], (file) => {
+        transformTemplate(file, 'components');
+    })
+    .pipe(gulpRename(".js"))
+    .pipe(gulpDest(COMPONENT_OUTPUT));
 }
 
 function iterateThemeTemplates() {
     const theme = site.theme;
-    return gulp.src(`${THEME_SOURCE}/${theme}/**/*.html`)
-    .pipe(through2.obj(function(file, enc, cb) {
-        if (file.isBuffer()) {
-            transformTemplate(file, 'theme');
-        }
-        cb(null, file);
-    }))
-    .pipe(rename(function (path) {
-        path.extname = ".js";
-    }))
-    .pipe(gulp.dest(THEME_OUTPUT));
+    return gulpSrc(`${THEME_SOURCE}/${theme}/**/*.html`, (file) => {
+        transformTemplate(file, 'theme');
+    })
+    .pipe(gulpRename(".js"))
+    .pipe(gulpDest(THEME_OUTPUT));
 }
 
 function generateApp(cb) {
@@ -229,8 +194,6 @@ function generateApp(cb) {
         components: components,
         routes: ROUTES
     });
-    fs.writeFile(`${SRC_PATH}/app.js`, app, 'utf8', function(err, data) {
-        cb();
-    });
+    return asyncWriteFile(`${SRC_PATH}/app.js`, app);
 }
 

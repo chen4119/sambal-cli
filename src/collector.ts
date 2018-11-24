@@ -1,19 +1,22 @@
-const gulp = require('gulp');
-const through2 = require('through2');
 const matter = require('gray-matter');
-const fs = require('fs');
 const path = require('path');
 const shell = require('shelljs');
+import {gulpSeries, asyncGlob} from './gulp';
+import {asyncWriteFile} from './utils';
 import {UserDefinedCollection, Partition, Chunk, Collection, Sort} from './types';
 
 const MAIN_PARTITION_KEY = "_main_";
 const CHUNK_FILE_PREFIX = "chunk_";
 const MAX_CHUNK_ENTRIES = 2000;
 
-gulp.on('error', (err) => {
-    console.log('error');
-    console.log(err);
-});
+export async function collect(collections: UserDefinedCollection[], output: string) {
+    const promises = [];
+    for (let i = 0; i < collections.length; i++) {
+        promises.push(goCollect(collections[i], output));
+    }
+    await Promise.all(promises);
+    await createMasterManifest(output);
+}
 
 function getIndexFields(collectionDef: UserDefinedCollection) {
     const fieldSet = new Set<string>();
@@ -103,15 +106,13 @@ function partition(obj: any, filePath: string, partitionMap: Map<string, Partiti
 
 function indexFiles(collectionDef: UserDefinedCollection, partitionMap: Map<string, Partition>) {
     const indexFields = getIndexFields(collectionDef);
-    return streamToPromise(gulp.src(collectionDef.glob)
-        .pipe(through2.obj(function(file, enc, cb) {
-            const filePath = `${path.relative(file.base, file.dirname)}/${file.basename}`;
-            console.log(filePath);
-            const obj = parseContent(file.contents.toString(), file.extname);
-            const objWithIndexValuesOnly = getIndexValues(obj, indexFields);
-            partition(objWithIndexValuesOnly, filePath, partitionMap, collectionDef.partitionBy);
-            cb(null, file);
-        })));
+    return asyncGlob(collectionDef.glob, (file) => {
+        const filePath = `${path.relative(file.base, file.dirname)}/${file.basename}`;
+        console.log(filePath);
+        const obj = parseContent(file.contents.toString(), file.extname);
+        const objWithIndexValuesOnly = getIndexValues(obj, indexFields);
+        partition(objWithIndexValuesOnly, filePath, partitionMap, collectionDef.partitionBy);
+    });
 }
 
 function isValueValid(val) {
@@ -190,14 +191,12 @@ async function savePartitions(collectionDef: UserDefinedCollection, partitionMap
     return asyncWriteFile(`${output}/${collectionDef.name}/manifest.json`, collectionManifest);
 }
 
-async function createMasterManifest(collections: UserDefinedCollection[], output: string) {
+async function createMasterManifest(output: string) {
     const collectionManifests = [];
-    await streamToPromise(gulp.src(`${output}/**/manifest.json`)
-        .pipe(through2.obj(function(file, enc, cb) {
-            const manifest = parseContent(file.contents.toString(), file.extname);
-            collectionManifests.push(manifest);
-            cb(null, file);
-        })));
+    await asyncGlob(`${output}/**/manifest.json`, (file) => {
+        const manifest = parseContent(file.contents.toString(), file.extname);
+        collectionManifests.push(manifest);
+    });
     await asyncWriteFile(`${output}/manifest.json`, collectionManifests);
 }
 
@@ -211,38 +210,9 @@ function goCollect(collectionDef: UserDefinedCollection, output: string) {
     const saveTask = () => savePartitions(collectionDef, partitionMap, output);
     
     return new Promise(function(resolve, reject) {
-        gulp.series(indexFilesTask, sortTask, saveTask)(() => {
+        gulpSeries(indexFilesTask, sortTask, saveTask)(() => {
             resolve();
         });
     });
 }
 
-export async function collect(collections: UserDefinedCollection[], output: string) {
-    const promises = [];
-    for (let i = 0; i < collections.length; i++) {
-        promises.push(goCollect(collections[i], output));
-    }
-    await Promise.all(promises);
-    await createMasterManifest(collections, output);
-}
-
-function asyncWriteFile(outputPath: string, content) {
-    return new Promise(function(resolve, reject) {
-        fs.writeFile(outputPath, JSON.stringify(content), 'utf8', function(err, data) {
-            if (err) {
-                console.log(err);
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
-    });
-}
-
-function streamToPromise(stream) {
-    return new Promise(function(resolve, reject) {
-        stream.on('finish', () => {
-            resolve();
-        });
-    });
-}
