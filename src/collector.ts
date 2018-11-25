@@ -3,7 +3,7 @@ import path from "path";
 import shell from 'shelljs';
 import {gulpSeries, asyncGlob} from './gulp';
 import {asyncWriteFile} from './utils';
-import {UserDefinedCollection, Partition, Chunk, Collection, Sort} from './types';
+import {UserDefinedCollection, Partition, Chunk, Collection, Sort, UserDefinedType} from './types';
 
 const MAIN_PARTITION_KEY = "_main_";
 const CHUNK_FILE_PREFIX = "chunk_";
@@ -18,24 +18,33 @@ export async function collect(collections: UserDefinedCollection[], output: stri
     await createMasterManifest(output);
 }
 
-function getIndexFields(collectionDef: UserDefinedCollection) {
-    const fieldSet = new Set<string>();
-    if (collectionDef.sortBy) {
-        for (let i = 0; i < collectionDef.sortBy.length; i++) {
-            fieldSet.add(collectionDef.sortBy[i].field);
-        }
+function goCollect(collectionDef: UserDefinedCollection, output: string) {
+    const partitionMap = new Map<string, Partition>();
+    const indexFilesTask = () => indexFiles(collectionDef, partitionMap);
+    const sortTask = (cb) => {
+        sortPartitions(collectionDef.sortBy, partitionMap);
+        cb();
+    };
+    const saveTask = () => savePartitions(collectionDef, partitionMap, output);
+    
+    return new Promise(function(resolve, reject) {
+        gulpSeries(indexFilesTask, sortTask, saveTask)(() => {
+            resolve();
+        });
+    });
+}
+
+function getIndexFields(type: UserDefinedType) {
+    let indexFields = [];
+    if (Array.isArray(type.primaryKey)) {
+        indexFields = indexFields.concat(type.primaryKey);
+    } else {
+        indexFields.push(type.primaryKey);
     }
-    if (collectionDef.partitionBy) {
-        for (let i = 0; i < collectionDef.partitionBy.length; i++) {
-            fieldSet.add(collectionDef.partitionBy[i]);
-        }
+    if (type.indexFields) {
+        indexFields = indexFields.concat(type.indexFields);
     }
-    if (collectionDef.include) {
-        for (let i = 0; i < collectionDef.include.length; i++) {
-            fieldSet.add(collectionDef.include[i]);
-        }
-    }
-    return [...fieldSet.values()];
+    return indexFields;
 }
 
 function getIndexValues(obj: any, indexFields: string[]) {
@@ -105,8 +114,8 @@ function partition(obj: any, filePath: string, partitionMap: Map<string, Partiti
 }
 
 function indexFiles(collectionDef: UserDefinedCollection, partitionMap: Map<string, Partition>) {
-    const indexFields = getIndexFields(collectionDef);
-    return asyncGlob(collectionDef.glob, (file) => {
+    const indexFields = getIndexFields(collectionDef.type);
+    return asyncGlob(collectionDef.type.glob, (file) => {
         const filePath = `${path.relative(file.base, file.dirname)}/${file.basename}`;
         console.log(filePath);
         const obj = parseContent(file.contents.toString(), file.extname);
@@ -200,19 +209,4 @@ async function createMasterManifest(output: string) {
     await asyncWriteFile(`${output}/manifest.json`, collectionManifests);
 }
 
-function goCollect(collectionDef: UserDefinedCollection, output: string) {
-    const partitionMap = new Map<string, Partition>();
-    const indexFilesTask = () => indexFiles(collectionDef, partitionMap);
-    const sortTask = (cb) => {
-        sortPartitions(collectionDef.sortBy, partitionMap);
-        cb();
-    };
-    const saveTask = () => savePartitions(collectionDef, partitionMap, output);
-    
-    return new Promise(function(resolve, reject) {
-        gulpSeries(indexFilesTask, sortTask, saveTask)(() => {
-            resolve();
-        });
-    });
-}
 

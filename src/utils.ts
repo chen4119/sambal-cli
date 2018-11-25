@@ -12,6 +12,18 @@ export function getPropertyValue(type: string, value: string) {
     return value;
 }
 
+export function asyncReadFile(inputPath: string) {
+    return new Promise(function(resolve, reject) {
+        fs.readFile(inputPath, 'utf8', function(err, contents) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(contents);
+            }
+        });
+    });
+}
+
 export function asyncWriteFile(outputPath: string, content: string | Object) {
     return new Promise(function(resolve, reject) {
         let contentStr = content;
