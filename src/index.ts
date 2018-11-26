@@ -1,8 +1,12 @@
 import program from "commander";
+import fs from 'fs';
+import del from "delete";
+import yaml from "js-yaml";
 import {version} from "../package.json";
 import {generate} from "./generator";
 import {collect} from "./collector";
-import {SambalConfig, UserDefinedType, UserDefinedCollection} from "./types.js";
+import {SambalConfig, UserDefinedType, UserDefinedCollection} from "./types";
+import {getCollectionConfig} from "./validate";
 
 const DEFAULT_OPTIONS: SambalConfig = {
     configFolder: "sambal",
@@ -16,7 +20,7 @@ const BLOG_TYPE: UserDefinedType = {
     name: "blog",
     glob: "data/**/*.md",
     primaryKey: "id",
-    indexFields: []
+    indexFields: ["year", "tags", "author"]
 }
 
 const ALL_BLOGS_COLLECTION: UserDefinedCollection = {
@@ -31,7 +35,7 @@ const ALL_BLOGS_COLLECTION: UserDefinedCollection = {
 const BLOGS_BY_AUTHOR: UserDefinedCollection = {
     name: "blogsByAuthor",
     type: BLOG_TYPE,
-    partitionBy: ["author"]
+    partitionBy: ["tags", "author"]
 };
 
 program
@@ -41,6 +45,7 @@ program
     .parse(process.argv);
 
 if (program.generate) {
+    del.sync([`${DEFAULT_OPTIONS.jsFolder}`]);
     generate(
         DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
@@ -48,5 +53,10 @@ if (program.generate) {
         DEFAULT_OPTIONS.jsFolder
     );
 } else if (program.collect) {
-    collect([ALL_BLOGS_COLLECTION, BLOGS_BY_AUTHOR], DEFAULT_OPTIONS.collectionFolder);
+    del.sync([`${DEFAULT_OPTIONS.collectionFolder}`]);
+    const content = fs.readFileSync(`${DEFAULT_OPTIONS.configFolder}/collections.yml`, 'utf8');
+    const collectionConfig = yaml.safeLoad(content);
+    console.log(collectionConfig);
+    getCollectionConfig(collectionConfig.types, collectionConfig.collections);
+    // collect([ALL_BLOGS_COLLECTION, BLOGS_BY_AUTHOR], DEFAULT_OPTIONS.collectionFolder);
 }

@@ -66,5 +66,5 @@ dist/
 themes/
 js/
 data/
-test/
+collections/
 index.js

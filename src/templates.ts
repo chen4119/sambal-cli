@@ -31,12 +31,9 @@ customElements.define('<%=tagName%>', <%=componentName%>);
 `;
 
 export const APP: string = `
-import {LitElement, html} from '@polymer/lit-element';
-import {connect} from 'pwa-helpers/connect-mixin.js';
-import {installRouter} from 'pwa-helpers/router.js';
-import {store} from './store.js';
+import {html} from '@polymer/lit-element';
+import {SambalApp} from 'sambal';
 import './vendor.js';
-import {updateLocation} from './actions/app.js';
 
 <% _.forEach(components, function(com) { %>
 import '<%=com.path%>';
@@ -51,29 +48,10 @@ const ROUTES = [
     <% }); %>
 ];
 
-class SambalApp extends connect(store)(LitElement) {
+class App extends SambalApp {
 
     constructor() {
         super();
-    }
-
-    firstUpdated() {
-        installRouter((location) => store.dispatch(updateLocation(location)));
-        
-        // Custom elements polyfill safe way to indicate an element has been upgraded.
-        this.removeAttribute('unresolved');
-    }
-
-    static get properties() { 
-        return {
-            page: {type: String}
-        }
-    }
-
-    stateChanged(state) {
-        if (this.page !== state.app.page) {
-            this.page = state.app.page;
-        }
     }
 
     render() {
@@ -83,5 +61,5 @@ class SambalApp extends connect(store)(LitElement) {
     
 }
 
-customElements.define('sambal-app', SambalApp);
+customElements.define('sambal-app', App);
 `;

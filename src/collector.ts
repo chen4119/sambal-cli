@@ -34,6 +34,66 @@ function goCollect(collectionDef: UserDefinedCollection, output: string) {
     });
 }
 
+function indexFiles(collectionDef: UserDefinedCollection, partitionMap: Map<string, Partition>) {
+    const indexFields = getIndexFields(collectionDef.type);
+    return asyncGlob(collectionDef.type.glob, (file) => {
+        const filePath = `${path.relative(file.base, file.dirname)}/${file.basename}`;
+        console.log(filePath);
+        const obj = parseContent(file.contents.toString(), file.extname);
+        const objWithIndexValuesOnly = getIndexValues(obj, indexFields);
+        partition(objWithIndexValuesOnly, filePath, partitionMap, collectionDef.partitionBy);
+    });
+}
+
+function partition(obj: any, filePath: string, partitionMap: Map<string, Partition>, partitionBy: string[]) {
+    let partition: Partition = null;
+    let partitionKeys: string[][] = [];
+    if (partitionBy) {
+        for (const fieldName of partitionBy) {
+            const fieldValue = obj[fieldName];
+            if (Array.isArray(fieldValue)) {
+                if (partitionKeys.length === 0) {
+                    for (const value of fieldValue) {
+                        partitionKeys.push([value]);
+                    }
+                } else {
+                    let updatedPartitionKeys: string[][] = [];
+                    for (const keyValues of partitionKeys) {
+                        for (const value of fieldValue) {
+                            updatedPartitionKeys.push([...keyValues, value]);
+                        }
+                    }
+                    partitionKeys = updatedPartitionKeys;
+                }
+            } else if (isValueValid(fieldValue)) {
+                if (partitionKeys.length === 0) {
+                    partitionKeys.push([fieldValue]);
+                } else {
+                    for (const keyValues of partitionKeys) {
+                        keyValues.push(fieldValue);
+                    }
+                }
+            }
+        }
+    } else {
+        partitionKeys.push([MAIN_PARTITION_KEY]);
+    }
+    for (const keyValues of partitionKeys) {
+        const partitionKey = keyValues.join('-');
+        const base64Key = new Buffer(partitionKey).toString('base64');
+        if(partitionMap.has(base64Key)) {
+            partition = partitionMap.get(base64Key);
+        } else {
+            partition = {
+                key: base64Key,
+                chunks: []
+            };
+            partitionMap.set(base64Key, partition);
+        }
+        addObjToPartition(obj, filePath, partition);
+    }
+}
+
 function getIndexFields(type: UserDefinedType) {
     let indexFields = [];
     if (Array.isArray(type.primaryKey)) {
@@ -85,42 +145,6 @@ function addObjToPartition(obj: any, filePath: string, partition: Partition) {
     chunk.data.push({
         meta: obj,
         path: filePath
-    });
-}
-
-function partition(obj: any, filePath: string, partitionMap: Map<string, Partition>, partitionBy: string[]) {
-    let partition: Partition = null;
-    let partitionKey = null;
-    if (partitionBy) {
-        const key = partitionBy
-        .map((fieldName) => (typeof(obj[fieldName]) === 'undefined' || obj[fieldName] === null) ? '' : obj[fieldName])
-        .join('-');
-        console.log(`key:${key}`);
-        partitionKey = new Buffer(key).toString('base64');
-    } else {
-        partitionKey = MAIN_PARTITION_KEY;
-    }
-
-    if(partitionMap.has(partitionKey)) {
-        partition = partitionMap.get(partitionKey);
-    } else {
-        partition = {
-            key: partitionKey,
-            chunks: []
-        };
-        partitionMap.set(partitionKey, partition);
-    }
-    addObjToPartition(obj, filePath, partition);
-}
-
-function indexFiles(collectionDef: UserDefinedCollection, partitionMap: Map<string, Partition>) {
-    const indexFields = getIndexFields(collectionDef.type);
-    return asyncGlob(collectionDef.type.glob, (file) => {
-        const filePath = `${path.relative(file.base, file.dirname)}/${file.basename}`;
-        console.log(filePath);
-        const obj = parseContent(file.contents.toString(), file.extname);
-        const objWithIndexValuesOnly = getIndexValues(obj, indexFields);
-        partition(objWithIndexValuesOnly, filePath, partitionMap, collectionDef.partitionBy);
     });
 }
 
