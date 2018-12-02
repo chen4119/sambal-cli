@@ -6,7 +6,9 @@ import {version} from "../package.json";
 import {generate} from "./generator";
 import {collect} from "./collector";
 import {SambalConfig, UserDefinedType, UserDefinedCollection} from "./types";
-import {getCollectionConfig} from "./validate";
+import {getYmlCollections} from "./validate";
+import {build} from "./build";
+import {serve} from "./serve";
 
 const DEFAULT_OPTIONS: SambalConfig = {
     configFolder: "sambal",
@@ -42,10 +44,11 @@ program
     .version(version)
     .option('-g, --generate', 'Generate Sambal javascript files')
     .option('-c, --collect', 'Generate data collection')
+    .option('-b, --build', 'Build project')
+    .option('-s, --serve', 'Start dev server')
     .parse(process.argv);
 
 if (program.generate) {
-    del.sync([`${DEFAULT_OPTIONS.jsFolder}`]);
     generate(
         DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
@@ -55,8 +58,17 @@ if (program.generate) {
 } else if (program.collect) {
     del.sync([`${DEFAULT_OPTIONS.collectionFolder}`]);
     const content = fs.readFileSync(`${DEFAULT_OPTIONS.configFolder}/collections.yml`, 'utf8');
-    const collectionConfig = yaml.safeLoad(content);
-    console.log(collectionConfig);
-    getCollectionConfig(collectionConfig.types, collectionConfig.collections);
-    // collect([ALL_BLOGS_COLLECTION, BLOGS_BY_AUTHOR], DEFAULT_OPTIONS.collectionFolder);
+    const ymlConfig = yaml.safeLoad(content);
+    const collections: UserDefinedCollection[] = getYmlCollections(ymlConfig.types, ymlConfig.collections);
+    collect(collections, DEFAULT_OPTIONS.collectionFolder);
+} else if (program.build) {
+    build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
+} else if (program.serve) {
+    serve(
+        DEFAULT_OPTIONS.configFolder,
+        DEFAULT_OPTIONS.componentFolder,
+        DEFAULT_OPTIONS.themeFolder,
+        DEFAULT_OPTIONS.jsFolder,
+        "bundle.js"
+    );
 }

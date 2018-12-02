@@ -1,4 +1,5 @@
 import path from 'path';
+import del from "delete";
 import _ from "lodash";
 import yaml from "js-yaml";
 import less from "less";
@@ -27,6 +28,10 @@ export async function generate(configFolder: string, componentFolder: string, th
     const propertiesMap = new Map<string, any>();
     const styleSheetMap = new Map<string, any>();
     const componentMap = new Map<string, any>();
+    const cleanTask = (cb) => {
+        clean(jsFolder);
+        cb();
+    };
     const iterateMetaTask = () => iterateMetas(site, componentFolder, themeFolder, propertiesMap);
     const iterateStyleSheetTask = () => iterateStyleSheets(site, componentFolder, themeFolder, styleSheetMap);
     const generateComponentTask = () => generateTemplates(
@@ -48,14 +53,30 @@ export async function generate(configFolder: string, componentFolder: string, th
     const generateAppTask = () => generateApp(routes, jsFolder, componentMap);
     const buildDependencies = gulpParallel(iterateMetaTask, iterateStyleSheetTask);
     const build = gulpSeries(
+        cleanTask,
         buildDependencies,
         generateComponentTask,
         generateThemeTask,
         generateAppTask
     );
-    build((error) => {
-        console.log("done");
+    await asyncGenerate(build);
+}
+
+function asyncGenerate(gulpTask) {
+    return new Promise((resolve) => {
+        console.log("Generating code...");
+        gulpTask((error) => {
+            resolve();
+        });
     });
+}
+
+function clean(jsFolder: string) {
+    del.sync([
+        `${jsFolder}/components/**/*`,
+        `${jsFolder}/theme/**/*`,
+        `${jsFolder}/app.js`
+    ]);
 }
 
 async function getRoutes(routesPath: string, site: SambalSiteMeta) {

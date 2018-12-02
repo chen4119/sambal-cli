@@ -80,15 +80,15 @@ function partition(obj: any, filePath: string, partitionMap: Map<string, Partiti
     }
     for (const keyValues of partitionKeys) {
         const partitionKey = keyValues.join('-');
-        const base64Key = new Buffer(partitionKey).toString('base64');
-        if(partitionMap.has(base64Key)) {
-            partition = partitionMap.get(base64Key);
+        const hexKey = new Buffer(partitionKey).toString('hex');
+        if(partitionMap.has(hexKey)) {
+            partition = partitionMap.get(hexKey);
         } else {
             partition = {
-                key: base64Key,
+                key: hexKey,
                 chunks: []
             };
-            partitionMap.set(base64Key, partition);
+            partitionMap.set(hexKey, partition);
         }
         addObjToPartition(obj, filePath, partition);
     }

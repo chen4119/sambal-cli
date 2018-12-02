@@ -1,39 +1,58 @@
+import {UserDefinedType, UserDefinedCollection} from "./types";
 
-export function getCollectionConfig(types, collections) {
-    const collectionConfig = [];
+export function getYmlCollections(ymlTypes, ymlCollections) {
+    const collections: UserDefinedCollection[] = [];
     const typeMap = new Map<string, any>();
-    for (let i = 0; i < types.length; i++) {
-        const type = types[i];
+
+    for (let i = 0; i < ymlTypes.length; i++) {
+        const typeName = Object.keys(ymlTypes[i])[0];
+        const typeDef = ymlTypes[i][typeName];
+        const type: UserDefinedType = {
+            ...typeDef,
+            name: typeName
+        };
         validateType(type);
-        typeMap.set(type.name, type);
+        typeMap.set(typeName, type);
     }
-    for (let i = 0; i < collections.length; i++) {
-        const collection = collections[i];
-        validateCollection(typeMap, collection);
+    for (let i = 0; i < ymlCollections.length; i++) {
+        const collectionName = Object.keys(ymlCollections[i])[0];
+        const collectionDef = ymlCollections[i][collectionName];
+        if (collectionDef.sortBy) {
+            collectionDef.sortBy = collectionDef.sortBy.map((sort) => {
+                const sortField = Object.keys(sort)[0];
+                const sortOrder = sort[sortField];
+                return {
+                    field: sortField,
+                    order: sortOrder
+                }
+            });
+        }
+        const collection: UserDefinedCollection = {
+            ...collectionDef,
+            name: collectionName,
+            type: typeMap.get(collectionDef.type)
+        }
+        validateCollection(collection);
+        collections.push(collection);
     }
+    return collections;
 }
 
-function validateCollectionConfig(types, collections) {
-    const typeMap = new Map<string, any>();
-    for (let i = 0; i < types.length; i++) {
-        const type = types[i];
-        validateType(type);
-        typeMap.set(type.name, type);
+function validateType(type: UserDefinedType) {
+    if (typeof(type.name) !== 'string' || type.name === '') {
+        throw new Error(`Invalid name for type: ${type}`);
     }
-
-    for (let i = 0; i < collections.length; i++) {
-        const collection = collections[i];
-        validateCollection(typeMap, collection);
-    }
-}
-
-function validateType(type: any) {
-    console.log(type);
     if (typeof(type.glob) !== 'string' && !Array.isArray(type.glob)) {
         throw new Error(`Invalid glob for type: ${type.name}`);
     }
+    if (typeof(type.primaryKey) !== 'string' && !Array.isArray(type.primaryKey)) {
+        throw new Error(`Invalid primary key for type: ${type.name}`);
+    }
+    if (typeof(type.indexFields) !== 'undefined' && !Array.isArray(type.indexFields)) {
+        throw new Error(`Invalid index fields for type: ${type.name}`);
+    }
 }
 
-function validateCollection(typeMap: Map<string, any>, collection: any) {
-    console.log(collection);
+function validateCollection(collection: UserDefinedCollection) {
+    // console.log(collection);
 }

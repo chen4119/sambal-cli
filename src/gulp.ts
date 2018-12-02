@@ -9,6 +9,7 @@ gulp.on('error', (err) => {
 
 export const gulpSeries = gulp.series;
 export const gulpParallel = gulp.parallel;
+export const gulpWatch = gulp.watch;
 
 export function asyncGlob(glob: string | string[], process: Function) {
     return new Promise(function(resolve, reject) {
