@@ -27,19 +27,22 @@ export async function generate(configFolder: string, componentFolder: string, th
 
     const propertiesMap = new Map<string, any>();
     const styleSheetMap = new Map<string, any>();
+    const sharedStyleSheetMap = new Map<string, any>();
     const componentMap = new Map<string, any>();
     const cleanTask = (cb) => {
         clean(jsFolder);
         cb();
     };
     const iterateMetaTask = () => iterateMetas(site, componentFolder, themeFolder, propertiesMap);
-    const iterateStyleSheetTask = () => iterateStyleSheets(site, componentFolder, themeFolder, styleSheetMap);
+    const iterateComponentCssTask = () => iterateComponentCss(site, componentFolder, themeFolder, styleSheetMap);
+    const iterateSharedCssTask = () => iterateSharedCss(site, componentFolder, themeFolder, sharedStyleSheetMap);
     const generateComponentTask = () => generateTemplates(
         [`${componentFolder}/**/*.html`, `${componentFolder}/**/*.md`],
         "components",
         `${jsFolder}/components`,
         propertiesMap,
         styleSheetMap,
+        sharedStyleSheetMap,
         componentMap
     );
     const generateThemeTask = () => generateTemplates(
@@ -48,10 +51,11 @@ export async function generate(configFolder: string, componentFolder: string, th
         `${jsFolder}/theme`,
         propertiesMap,
         styleSheetMap,
+        sharedStyleSheetMap,
         componentMap
     );
     const generateAppTask = () => generateApp(routes, jsFolder, componentMap);
-    const buildDependencies = gulpParallel(iterateMetaTask, iterateStyleSheetTask);
+    const buildDependencies = gulpParallel(iterateMetaTask, iterateComponentCssTask, iterateSharedCssTask);
     const build = gulpSeries(
         cleanTask,
         buildDependencies,
@@ -143,15 +147,35 @@ function iterateMetas(site: SambalSiteMeta, componentFolder: string, themeFolder
     });
 }
 
-function iterateStyleSheets(site: SambalSiteMeta, componentFolder: string, themeFolder: string, styleSheetMap: Map<string, any>) {
+function iterateComponentCss(site: SambalSiteMeta, componentFolder: string, themeFolder: string, styleSheetMap: Map<string, any>) {
     const theme = site.theme;
-    return gulpSrc([`${componentFolder}/**/*.less`, `${themeFolder}/${theme}/**/*.less`], async (file) => {
-        const tagName = path.basename(file.basename, '.less');
-        const output = await less.render(file.contents.toString());
-        if (styleSheetMap.has(tagName)) {
-            throw new Error(`Duplicate tagName ${tagName}`);
+    return gulpSrc([
+            `${componentFolder}/**/*.css`,
+            `!${componentFolder}/css/**/*.css`,
+            `${themeFolder}/${theme}/**/*.css`, 
+            `!${themeFolder}/${theme}/css/**/*.css`
+        ], async (file) => {
+            const tagName = path.basename(file.basename, '.css');
+            console.log('stylesheet filename: ' + file.basename);
+            // const output = await less.render(file.contents.toString());
+            const css = file.contents.toString();
+            if (styleSheetMap.has(tagName)) {
+                throw new Error(`Duplicate tagName ${tagName}`);
+            }
+            styleSheetMap.set(tagName, css);
+    });
+}
+
+function iterateSharedCss(site: SambalSiteMeta, componentFolder: string, themeFolder: string, sharedStyleSheetMap: Map<string, any>) {
+    const theme = site.theme;
+    return gulpSrc([`${componentFolder}/css/**/*.css`, `${themeFolder}/${theme}/css/**/*.css`], async (file) => {
+        const styleName = path.basename(file.basename, '.css');
+        console.log('shared stylesheet filename: ' + file.basename);
+        const css = file.contents.toString();
+        if (sharedStyleSheetMap.has(styleName)) {
+            throw new Error(`Duplicate tagName ${styleName}`);
         }
-        styleSheetMap.set(tagName, output.css);
+        sharedStyleSheetMap.set(styleName, css);
     });
 }
 
@@ -160,6 +184,7 @@ function transformTemplate(
     targetFolder: string, 
     propertiesMap: Map<string, any>, 
     styleSheetMap: Map<string, any>,
+    sharedStyleSheetMap: Map<string, any>,
     componentMap: Map<string, any>) {
     const tagName = path.basename(file.basename, file.extname);
     const relativePath = path.relative(file.base, file.dirname);
@@ -195,9 +220,10 @@ function generateTemplates(
     outputFolder: string, 
     propertiesMap: Map<string, any>, 
     styleSheetMap: Map<string, any>,
+    sharedStyleSheetMap: Map<string, any>,
     componentMap: Map<string, any>) {
     return gulpSrc(glob, (file) => {
-        transformTemplate(file, targetFolder, propertiesMap, styleSheetMap, componentMap);
+        transformTemplate(file, targetFolder, propertiesMap, styleSheetMap, sharedStyleSheetMap, componentMap);
     })
     .pipe(gulpRename(".js"))
     .pipe(gulpDest(outputFolder));
