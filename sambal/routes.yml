@@ -1,0 +1,12 @@
+- route:
+    path: /
+    slots:
+        - main: about-me
+- route:
+    path: /about
+    slots:
+        - main: about-me
+- route:
+    path: /resume
+    slots:
+        - main: my-resume

@@ -1,0 +1,38 @@
+@import "./themes/sambal/sambal-theme.less";
+
+.site-header {
+    border-bottom: 1px solid #ddd;
+    background-color: #fff;
+    opacity: 0.75;
+    position:fixed;
+    left: 0px;
+    top: 0px;
+    height: 56px;
+    width: 100%;
+    z-index: 50;
+}
+
+.site-nav {
+    float: right;
+    line-height: 56px;
+    .page-link{
+        line-height: 1.5em;
+        // Gaps between nav items, but not on the first one
+        &:not(:first-child) {
+            margin-left: 10px;
+        }
+    }
+    @media screen and (max-width: 600px) {
+        position: fixed;
+        top: 0px;
+        right: 10px;
+        text-align: right;
+        &:hover .trigger {
+            display: block;
+            padding-bottom: 5px;
+        }
+        .page-link {
+            display: line;
+        }
+    }
+}

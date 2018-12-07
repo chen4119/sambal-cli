@@ -1,0 +1,14 @@
+types:
+    - blog:
+          glob: data/**/*.md
+          primaryKey: id
+          indexFields: [year, tags, author]
+
+collections:
+    - allBlogs:
+          type: blog
+          sortBy:
+              - year: desc
+    - blogsByAuthor:
+          type: blog
+          partitionBy: [tags, author]

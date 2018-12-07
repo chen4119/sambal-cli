@@ -60,10 +60,8 @@ typings/
 # next.js build output
 .next
 
-components/
-sambal/
+
 dist/
-themes/
 js/
 data/
 collections/

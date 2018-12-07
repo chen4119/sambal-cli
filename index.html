@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <base href="/">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+
+    <title>Sambal</title>
+    <meta name="description" content="Sambal webcomponents">
+    <link rel="stylesheet" type="text/css" href="css/main.css">
+</head>
+<body>
+
+    <sambal-app></sambal-app>
+    <script>
+        // HACK(keanulee): The Redux package assumes `process` exists - mock it here before
+        // the module is loaded.
+        window.process = {
+          env: {
+            NODE_ENV: 'production'
+          }
+        };
+    </script>
+    <script type="module" src="bundle.js"></script>
+</body>
+</html>
