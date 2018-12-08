@@ -2,6 +2,10 @@
 export const COMPONENT: string = `
 import {LitElement, html} from '@polymer/lit-element';
 
+<% _.forEach(includeStyleSheets, function(styleSheet) { %>
+import {<%=styleSheet.name%>} from '<%=styleSheet.path%>';
+<% }); %>
+
 export default class <%=componentName%> extends LitElement {
 
     constructor() {
@@ -23,7 +27,12 @@ export default class <%=componentName%> extends LitElement {
         <% _.forEach(properties, function(prop) { %>
         const <%-prop.name%> = this.<%=prop.name%>;
         <% }); %>
-        return html\`<%=template%>\`;
+        return html\`
+        <% _.forEach(includeStyleSheets, function(styleSheet) { %>
+        \${<%=styleSheet.name%>}
+        <% }); %>
+        <%=template%>
+        \`;
     }
 }
 
@@ -62,4 +71,13 @@ class App extends SambalApp {
 }
 
 customElements.define('sambal-app', App);
+`;
+
+export const STYLESHEET: string = `
+import {html} from '@polymer/lit-element';
+
+export const <%=styleSheetName%> = html\`
+<style>
+    <%=css%>
+<style>\`;
 `;
