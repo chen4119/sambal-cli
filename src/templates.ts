@@ -42,6 +42,7 @@ customElements.define('<%=tagName%>', <%=componentName%>);
 export const APP: string = `
 import {html} from '@polymer/lit-element';
 import {SambalApp} from 'sambal';
+import {app} from './components/css/app.js';
 import './vendor.js';
 
 <% _.forEach(components, function(com) { %>
@@ -52,7 +53,7 @@ const ROUTES = [
     <% _.forEach(routes, function(route) { %>
     {
         path: '<%=route.path%>',
-        template: html \`<%=route.template%>\`
+        components: html\`<%=route.components%>\`
     },
     <% }); %>
 ];
@@ -65,7 +66,12 @@ class App extends SambalApp {
 
     render() {
         const route = ROUTES.find((r) => r.path === this.page);
-        return route.template;
+        return html\`
+        \${app}
+        <<%=themeTagName%>>
+            \${route.components}
+        </<%=themeTagName%>>
+        \`;
     }
     
 }

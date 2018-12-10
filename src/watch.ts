@@ -3,7 +3,7 @@ import browserSync from 'browser-sync';
 import {generate} from "./generator";
 import {build} from "./build";
 
-export async function serve(configFolder: string, componentFolder: string, themeFolder: string, jsFolder: string, output: string) {
+export async function watch(configFolder: string, componentFolder: string, themeFolder: string, jsFolder: string) {
     const globs = [
         `${configFolder}/site.yml`,
         `${configFolder}/routes.yml`,
@@ -12,20 +12,22 @@ export async function serve(configFolder: string, componentFolder: string, theme
     ];
     const instance = browserSync.create();
     instance.init({
+        /*
         server: {
             baseDir: "./"
-        }
+        }*/
+        proxy: "localhost:8081"
     });
 
     const generateTask = () => generate(configFolder, componentFolder, themeFolder, jsFolder);
-    const buildTask = () => build(`${jsFolder}/app.js`, output);
+    // const buildTask = () => build(`${jsFolder}/app.js`, output);
     const reloadTask = (cb) => {
         instance.reload();
         cb();
     }
     const reBuild = gulpSeries(
         generateTask,
-        buildTask,
+        // buildTask,
         reloadTask
     );
     const watcher = gulpWatch(globs, {delay: 1000}, function(cb) {

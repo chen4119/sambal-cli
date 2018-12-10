@@ -6,5 +6,4 @@ Ran a startup with a co-founder for 3 years; Led a team of 5 developers as a tec
 <span class="contacticon center">
 	<a href="https://github.com/chen4119" target="_blank"><i class="fa fa-github-square"></i></a>
 	<a href="https://www.linkedin.com/in/wan-chun-chen-9a95a010" target="_blank"><i class="fa fa-linkedin-square"></i></a>
-	<a href="https://twitter.com/askchenny" target="_blank"><i class="fa fa-twitter-square"></i></a>
 </span>

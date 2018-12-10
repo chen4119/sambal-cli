@@ -1,10 +1,9 @@
-<header class="site-header">
-    <div class="wrapper">
-        <nav class="site-nav">
-            <div class="trigger">
-                <a class="page-link" href="/about">About</a>
-                <a class="page-link" href="/resume">Resume</a>
-            </div>
-        </nav>
-    </div>
-  </header>
+<app-header condenses reveals effects="waterfall">
+    <app-toolbar class="toolbar-top">
+        <div main-title>Title</div>
+    </app-toolbar>
+
+    <nav class="toolbar-list">
+        ${nav.map((link) => html`<a href="${link.path}">${link.name}</a>`)}
+    </nav>
+</app-header>

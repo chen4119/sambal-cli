@@ -5,9 +5,11 @@ export function getComponentNameFromTagName(tagName: string) {
 	return names.join('');
 }
 
-export function getPropertyValue(type: string, value: string) {
+export function getPropertyValue(type: string, value: any) {
     if (type === 'String') {
         return `"${value}"`;    
+    } else if (type === 'Object') {
+        return JSON.stringify(value);
     }
     return value;
 }

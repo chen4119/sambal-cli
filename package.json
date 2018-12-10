@@ -24,8 +24,13 @@
         "sambal": "./bin/sambal"
     },
     "scripts": {
-        "start": "./bin/sambal -g",
-        "build": "rollup -c"
+        "start": "npm run serve & npm run watch",
+        "build": "rollup -c",
+        "generate": "./bin/sambal -g",
+        "serve": "polymer serve --port 8081",
+        "serve:static": "polymer serve --port 5000 build/esm-bundled",
+        "watch": "./bin/sambal -w",
+        "polymer": "polymer build"
     },
     "dependencies": {
         "@babel/core": "7.1.5",
@@ -34,7 +39,6 @@
         "gulp": "next",
         "gulp-rename": "1.4.0",
         "lodash": "4.17.11",
-        "less": "3.8.1",
         "marked": "0.5.2",
         "delete": "1.1.0",
         "through2": "3.0.0",
@@ -45,14 +49,15 @@
         "browser-sync": "2.26.3",
         "rollup": "0.67.0",
         "rollup-plugin-babel": "4.0.3",
-        "rollup-plugin-node-resolve": "3.4.0"
+        "rollup-plugin-node-resolve": "3.4.0",
+        "polymer-cli": "1.9.2",
+        "@polymer/app-layout": "3.0.2"
     },
     "devDependencies": {
         "@types/gulp": "4.0.5",
         "@types/node": "10.12.10",
         "@types/shelljs": "0.8.0",
         "@types/through2": "2.0.34",
-        "@types/less": "3.0.0",
         "@types/marked": "0.4.2",
         "@types/js-yaml": "3.11.2",
         "@types/lodash": "4.14.118",

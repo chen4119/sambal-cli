@@ -1,0 +1,13 @@
+
+main {
+    display: block;
+}
+
+.main-content {
+    max-width: 800px;
+    padding-top: 106px;
+    padding-bottom: 25px;
+    margin-right: auto;
+    margin-left: auto;
+}
+

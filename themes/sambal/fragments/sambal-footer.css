@@ -1,0 +1,17 @@
+footer {
+    padding: 2px;
+    border-top: 1px solid var(--app-drawer-background-color);
+    background-color: var(--app-drawer-background-color);
+    color: var(--app-drawer-text-color);
+    text-align: center;
+    position:fixed;
+    left:0px;
+    bottom:0px;
+    height:25px;
+    width:100%;
+}
+
+p {
+    margin-top: 2px;
+    margin-bottom: 0px;
+}

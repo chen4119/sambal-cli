@@ -40,13 +40,11 @@ export async function generate(configFolder: string, componentFolder: string, th
     const iterateComponentCssTask = () => iterateComponentCss(site, componentFolder, themeFolder, styleSheetMap);
     const generateThemeSharedCssTask = () => generateSharedCss(
         `${themeFolder}/${site.theme}/css/**/*.css`,
-        "theme/css",
         `${jsFolder}/theme/css`,
         themeSharedStyleSheetMap
     );
     const generateComponentSharedCssTask = () => generateSharedCss(
         `${componentFolder}/css/**/*.css`,
-        "components/css",
         `${jsFolder}/components/css`,
         componentSharedStyleSheetMap
     );
@@ -68,7 +66,7 @@ export async function generate(configFolder: string, componentFolder: string, th
         themeSharedStyleSheetMap,
         componentMap
     );
-    const generateAppTask = () => generateApp(routes, jsFolder, componentMap);
+    const generateAppTask = () => generateApp(site, routes, jsFolder, componentMap);
     const buildDependencies = gulpParallel(iterateMetaTask, iterateComponentCssTask, generateThemeSharedCssTask, generateComponentSharedCssTask);
     const build = gulpSeries(
         cleanTask,
@@ -98,35 +96,36 @@ function clean(jsFolder: string) {
 }
 
 async function getRoutes(routesPath: string, site: SambalSiteMeta) {
-    const theme = site.theme;
-    const themeTagName = `${theme}-theme`;
+    // const theme = site.theme;
+    // const themeTagName = `${theme}-theme`;
     const routesContent = await asyncReadFile(routesPath);
     const routesMeta = yaml.safeLoad(routesContent.toString());
     const routes = [];
     for (let i = 0; i < routesMeta.length; i++) {
         const route = routesMeta[i].route;
-        let template = `<${themeTagName}>`;
+        // let template = `<${themeTagName}>`;
+        let components = ''; 
         for (let j = 0; j < route.slots.length; j++) {
             const slot = route.slots[j];
             const slotName = Object.keys(slot)[0];
             const componentTagName = slot[slotName];
             if (slotName === 'main') {
-                template += `<${componentTagName}></${componentTagName}>`;
+                components += `<${componentTagName}></${componentTagName}>`;
             } else {
-                template += `<${componentTagName} slot="${slotName}"></${componentTagName}>`;
+                components += `<${componentTagName} slot="${slotName}"></${componentTagName}>`;
             }
         }
-        template += `</${themeTagName}>`;
+        // template += `</${themeTagName}>`;
         routes.push({
             path: route.path,
-            template: template
+            components: components
         });
     }
     return routes;
 }
 
 function evalVar(variable: string, site: SambalSiteMeta){
-    return new Function("site", "return `${" + variable + "}`;").call(this, site);
+    return new Function("site", "return " + variable + ";").call(this, site);
 }
 
 function iterateMetas(site: SambalSiteMeta, componentFolder: string, themeFolder: string, metaMap: Map<string, any>) {
@@ -154,6 +153,7 @@ function iterateMetas(site: SambalSiteMeta, componentFolder: string, themeFolder
                 properties.push(property);
             }
         }
+        console.log(properties);
         const includeStyleSheets = componentMeta.includeStyleSheets ? componentMeta.includeStyleSheets : [];
         if (metaMap.has(tagName)) {
             throw new Error(`Duplicate tagName ${tagName}`);
@@ -184,7 +184,7 @@ function iterateComponentCss(site: SambalSiteMeta, componentFolder: string, them
     });
 }
 
-function transformSharedCss(file:any, targetFolder: string, sharedStyleSheetMap: Map<string, any>) {
+function transformSharedCss(file:any, sharedStyleSheetMap: Map<string, any>) {
     const styleName = path.basename(file.basename, '.css');
     const relativePath = path.relative(file.base, file.dirname);
     // console.log('shared stylesheet filename: ' + file.basename);
@@ -198,17 +198,16 @@ function transformSharedCss(file:any, targetFolder: string, sharedStyleSheetMap:
     });
     file.contents = new Buffer(styleSheet);
 
-    const styleSheetPath = (relativePath !== '') ? `./${targetFolder}/${relativePath}` : `./${targetFolder}`;
+    const styleSheetPath = (relativePath !== '') ? `${relativePath}/${styleName}.js` : `${styleName}.js`;
     sharedStyleSheetMap.set(styleName, styleSheetPath);
 }
 
 function generateSharedCss(
     glob: string | string[], 
-    targetFolder: string, 
     outputFolder: string, 
     sharedStyleSheetMap: Map<string, any>) {
     return gulpSrc(glob, (file) => {
-        transformSharedCss(file, targetFolder, sharedStyleSheetMap);
+        transformSharedCss(file, sharedStyleSheetMap);
     })
     .pipe(gulpRename(".js"))
     .pipe(gulpDest(outputFolder));
@@ -224,6 +223,7 @@ function transformTemplate(
     const tagName = path.basename(file.basename, file.extname);
     const relativePath = path.relative(file.base, file.dirname);
     const componentName = getComponentNameFromTagName(tagName);
+    const componentPath = (relativePath !== '') ? `./${targetFolder}/${relativePath}` : `./${targetFolder}`;
 
     if (componentMap.has(tagName)) {
         throw new Error(`Duplicate tagName ${tagName}`);
@@ -237,9 +237,14 @@ function transformTemplate(
     if (metaMap.has(tagName)) {
         const componentMeta = metaMap.get(tagName);
         properties = componentMeta.properties;
+
         for (const styleName of componentMeta.includeStyleSheets) {
             if (sharedStyleSheetMap.has(styleName)) {
-                const styleSheetPath = sharedStyleSheetMap.get(styleName);
+                const styleSheetRelativePath = sharedStyleSheetMap.get(styleName);
+                let styleSheetPath = path.relative(componentPath, `./${targetFolder}/css/${styleSheetRelativePath}`);
+                if (styleSheetPath.indexOf('.') !== 0) {
+                    styleSheetPath = `./${styleSheetPath}`;
+                }
                 includeStyleSheets.push({
                     name: styleName,
                     path: styleSheetPath
@@ -260,7 +265,7 @@ function transformTemplate(
     });
     file.contents = new Buffer(component);
 
-    const componentPath = (relativePath !== '') ? `./${targetFolder}/${relativePath}` : `./${targetFolder}`;
+    console.log(componentPath);
     componentMap.set(tagName, componentPath);
 }
 
@@ -279,7 +284,9 @@ function generateTemplates(
     .pipe(gulpDest(outputFolder));
 }
 
-function generateApp(routes: any[], jsFolder: string, componentMap: Map<string, any>) {
+function generateApp(site: SambalSiteMeta, routes: any[], jsFolder: string, componentMap: Map<string, any>) {
+    const theme = site.theme;
+    const themeTagName = `${theme}-theme`;
     const components = [];
     for (const tagName of componentMap.keys()) {
         const componentPath = componentMap.get(tagName);
@@ -289,7 +296,8 @@ function generateApp(routes: any[], jsFolder: string, componentMap: Map<string, 
     }
     const app = APP_TEMPLATE({
         components: components,
-        routes: routes
+        routes: routes,
+        themeTagName: themeTagName
     });
     return asyncWriteFile(`${jsFolder}/app.js`, app);
 }

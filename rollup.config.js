@@ -16,6 +16,7 @@ export default {
         "path",
         "fs",
         "crypto",
+        "child_process",
         ...Object.keys(pkg.dependencies || {}),
         ...Object.keys(pkg.peerDependencies || {}),
     ],

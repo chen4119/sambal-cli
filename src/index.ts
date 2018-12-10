@@ -1,5 +1,6 @@
 import program from "commander";
 import fs from 'fs';
+import child_process from 'child_process';
 import del from "delete";
 import yaml from "js-yaml";
 import {version} from "../package.json";
@@ -8,7 +9,7 @@ import {collect} from "./collector";
 import {SambalConfig, UserDefinedType, UserDefinedCollection} from "./types";
 import {getYmlCollections} from "./validate";
 import {build} from "./build";
-import {serve} from "./serve";
+import {watch} from "./watch";
 
 const DEFAULT_OPTIONS: SambalConfig = {
     configFolder: "sambal",
@@ -45,7 +46,7 @@ program
     .option('-g, --generate', 'Generate Sambal javascript files')
     .option('-c, --collect', 'Generate data collection')
     .option('-b, --build', 'Build project')
-    .option('-s, --serve', 'Start dev server')
+    .option('-w, --watch', 'Watch for file changes')
     .parse(process.argv);
 
 if (program.generate) {
@@ -63,12 +64,33 @@ if (program.generate) {
     collect(collections, DEFAULT_OPTIONS.collectionFolder);
 } else if (program.build) {
     build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
-} else if (program.serve) {
-    serve(
+} else if (program.watch) {
+    /*
+    child_process.exec('node ./node_modules/polymer-cli/bin/polymer.js serve', (error, stdout, stderr) => {
+        if (error) {
+            console.error(`exec error: ${error}`);
+            return;
+        }
+        // console.log(`stdout: ${stdout}`);
+        // console.log(`stderr: ${stderr}`);
+    });*/
+    setTimeout(function(){
+        startWatch();
+    }, 2000);
+}
+
+async function startWatch() {
+    await generate(
         DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
         DEFAULT_OPTIONS.themeFolder,
-        DEFAULT_OPTIONS.jsFolder,
-        "bundle.js"
+        DEFAULT_OPTIONS.jsFolder
+    );
+    // await build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
+    watch(
+        DEFAULT_OPTIONS.configFolder,
+        DEFAULT_OPTIONS.componentFolder,
+        DEFAULT_OPTIONS.themeFolder,
+        DEFAULT_OPTIONS.jsFolder
     );
 }

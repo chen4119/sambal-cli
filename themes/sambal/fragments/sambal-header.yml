@@ -1,0 +1,4 @@
+properties:
+    nav:
+        value: site.nav
+        type: Object
