@@ -1,5 +1,8 @@
 properties:
     title:
-        value: site.title
+        init: site.title
         type: String
         attribute: true
+
+
+

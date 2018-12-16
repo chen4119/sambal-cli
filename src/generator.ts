@@ -6,7 +6,7 @@ import yaml from "js-yaml";
 import marked from "marked";
 
 import {gulpSeries, gulpParallel, gulpSrc, gulpRename, gulpDest} from './gulp';
-import {COMPONENT, APP, STYLESHEET} from './templates';
+import {SIMPLE_COMPONENT, REDUX_COMPONENT, APP, STYLESHEET} from './templates';
 import {SambalSiteMeta} from './types';
 import {
     getComponentNameFromTagName,
@@ -16,7 +16,8 @@ import {
 } from './utils';
 
 _.templateSettings.interpolate = /<%=([\s\S]+?)%>/g;
-const COMPONENT_TEMPLATE = _.template(COMPONENT);
+const SIMPLE_COMPONENT_TEMPLATE = _.template(SIMPLE_COMPONENT);
+const REDUX_COMPONENT_TEMPLATE = _.template(REDUX_COMPONENT);
 const APP_TEMPLATE = _.template(APP);
 const STYLESHEET_TEMPLATE = _.template(STYLESHEET);
 
@@ -143,17 +144,17 @@ function iterateMetas(site: SambalSiteMeta, componentFolder: string, themeFolder
                     name: propName,
                     type: prop.type,
                     attribute: prop.attribute ? true : false,
-                    value: ''
+                    value: '',
+                    state: prop.state
                 };
-                if (typeof(prop.value) === 'string' && prop.value.indexOf('site.') === 0) {
-                    property.value = getPropertyValue(prop.type, evalVar(prop.value, site));
+                if (typeof(prop.init) === 'string' && prop.init.indexOf('site.') === 0) {
+                    property.value = getPropertyValue(prop.type, evalVar(prop.init, site));
                 } else {
-                    property.value = getPropertyValue(prop.type, prop.value);
+                    property.value = getPropertyValue(prop.type, prop.init);
                 }
                 properties.push(property);
             }
         }
-        console.log(properties);
         const includeStyleSheets = componentMeta.includeStyleSheets ? componentMeta.includeStyleSheets : [];
         if (metaMap.has(tagName)) {
             throw new Error(`Duplicate tagName ${tagName}`);
@@ -174,7 +175,6 @@ function iterateComponentCss(site: SambalSiteMeta, componentFolder: string, them
             `!${themeFolder}/${theme}/css/**/*.css`
         ], (file) => {
             const tagName = path.basename(file.basename, '.css');
-            console.log('stylesheet filename: ' + file.basename);
             // const output = await less.render(file.contents.toString());
             const css = file.contents.toString();
             if (styleSheetMap.has(tagName)) {
@@ -233,10 +233,14 @@ function transformTemplate(
         html = marked(file.contents.toString());
     }
     let properties = [];
+    let stateProps = [];
+    let attributes = [];
     let includeStyleSheets = [];
     if (metaMap.has(tagName)) {
         const componentMeta = metaMap.get(tagName);
         properties = componentMeta.properties;
+        attributes = properties.filter((p) => typeof(p.state) !== 'undefined' || p.attribute)
+        stateProps = properties.filter((p) => typeof(p.state) !== 'undefined')
 
         for (const styleName of componentMeta.includeStyleSheets) {
             if (sharedStyleSheetMap.has(styleName)) {
@@ -255,17 +259,29 @@ function transformTemplate(
     }
     const styleSheet = styleSheetMap.has(tagName) ? `<style>${styleSheetMap.get(tagName)}</style>` : "";
     const template = styleSheet + html;
-    const component = COMPONENT_TEMPLATE({
-        tagName: tagName,
-        includeStyleSheets: includeStyleSheets,
-        componentName: componentName,
-        properties: properties,
-        attributes: properties.filter((p) => p.attribute === true),
-        template: template
-    });
+    let component = '';
+    if (stateProps.length > 0) {
+        component = REDUX_COMPONENT_TEMPLATE({
+            tagName: tagName,
+            includeStyleSheets: includeStyleSheets,
+            componentName: componentName,
+            properties: properties,
+            attributes: attributes,
+            stateProps: stateProps,
+            template: template
+        });
+    } else {
+        component = SIMPLE_COMPONENT_TEMPLATE({
+            tagName: tagName,
+            includeStyleSheets: includeStyleSheets,
+            componentName: componentName,
+            properties: properties,
+            attributes: attributes,
+            template: template
+        });
+    }
     file.contents = new Buffer(component);
 
-    console.log(componentPath);
     componentMap.set(tagName, componentPath);
 }
 

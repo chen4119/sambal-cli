@@ -1,4 +1,8 @@
 properties:
     nav:
-        value: site.nav
+        init: site.nav
         type: Object
+    page:
+        init: ''
+        type: String
+        state: app.page
