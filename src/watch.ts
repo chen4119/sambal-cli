@@ -3,7 +3,7 @@ import browserSync from 'browser-sync';
 import {generate} from "./generator";
 import {build} from "./build";
 
-export async function watch(configFolder: string, componentFolder: string, themeFolder: string, jsFolder: string) {
+export async function watch(configFolder: string, componentFolder: string, themeFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
     const globs = [
         `${configFolder}/site.yml`,
         `${configFolder}/routes.yml`,
@@ -19,7 +19,7 @@ export async function watch(configFolder: string, componentFolder: string, theme
         proxy: "localhost:8081"
     });
 
-    const generateTask = () => generate(configFolder, componentFolder, themeFolder, jsFolder);
+    const generateTask = () => generate(configFolder, componentFolder, themeFolder, actionFolder, reducerFolder, jsFolder);
     // const buildTask = () => build(`${jsFolder}/app.js`, output);
     const reloadTask = (cb) => {
         instance.reload();

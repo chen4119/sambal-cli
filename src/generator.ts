@@ -20,8 +20,9 @@ const SIMPLE_COMPONENT_TEMPLATE = _.template(SIMPLE_COMPONENT);
 const REDUX_COMPONENT_TEMPLATE = _.template(REDUX_COMPONENT);
 const APP_TEMPLATE = _.template(APP);
 const STYLESHEET_TEMPLATE = _.template(STYLESHEET);
+const JS_EXPORT_REGEX = /\s+?export\s+const\s+([\S]+)/g;
 
-export async function generate(configFolder: string, componentFolder: string, themeFolder: string, jsFolder: string) {
+export async function generate(configFolder: string, componentFolder: string, themeFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
     const sitePath = `${configFolder}/site.yml`;
     const routesPath = `${configFolder}/routes.yml`;
     const siteContent = await asyncReadFile(sitePath);
@@ -33,11 +34,15 @@ export async function generate(configFolder: string, componentFolder: string, th
     const themeSharedStyleSheetMap = new Map<string, any>();
     const componentSharedStyleSheetMap = new Map<string, any>();
     const componentMap = new Map<string, any>();
+    const actionMap = new Map<string, any>();
+    const reducerMap = new Map<string, any>();
     const cleanTask = (cb) => {
         clean(jsFolder);
         cb();
     };
     const iterateMetaTask = () => iterateMetas(site, componentFolder, themeFolder, metaMap);
+    const iterateActionsTask = () => iterateActionsReducers(`${actionFolder}/**/*`, 'actions', `${jsFolder}/actions`, actionMap);
+    const iterateReducersTask = () => iterateActionsReducers(`${reducerFolder}/**/*`, 'reducers', `${jsFolder}/reducers`, reducerMap);
     const iterateComponentCssTask = () => iterateComponentCss(site, componentFolder, themeFolder, styleSheetMap);
     const generateThemeSharedCssTask = () => generateSharedCss(
         `${themeFolder}/${site.theme}/css/**/*.css`,
@@ -56,7 +61,9 @@ export async function generate(configFolder: string, componentFolder: string, th
         metaMap,
         styleSheetMap,
         componentSharedStyleSheetMap,
-        componentMap
+        componentMap,
+        actionMap,
+        reducerMap
     );
     const generateThemeTask = () => generateTemplates(
         `${themeFolder}/${site.theme}/**/*.html`,
@@ -65,10 +72,19 @@ export async function generate(configFolder: string, componentFolder: string, th
         metaMap,
         styleSheetMap,
         themeSharedStyleSheetMap,
-        componentMap
+        componentMap,
+        actionMap,
+        reducerMap
     );
-    const generateAppTask = () => generateApp(site, routes, jsFolder, componentMap);
-    const buildDependencies = gulpParallel(iterateMetaTask, iterateComponentCssTask, generateThemeSharedCssTask, generateComponentSharedCssTask);
+    const generateAppTask = () => generateApp(site, routes, jsFolder, componentMap, reducerMap);
+    const buildDependencies = gulpParallel(
+            iterateMetaTask, 
+            iterateComponentCssTask, 
+            generateThemeSharedCssTask, 
+            generateComponentSharedCssTask,
+            iterateActionsTask,
+            iterateReducersTask
+        );
     const build = gulpSeries(
         cleanTask,
         buildDependencies,
@@ -97,32 +113,57 @@ function clean(jsFolder: string) {
 }
 
 async function getRoutes(routesPath: string, site: SambalSiteMeta) {
-    // const theme = site.theme;
-    // const themeTagName = `${theme}-theme`;
     const routesContent = await asyncReadFile(routesPath);
     const routesMeta = yaml.safeLoad(routesContent.toString());
     const routes = [];
     for (let i = 0; i < routesMeta.length; i++) {
         const route = routesMeta[i].route;
-        // let template = `<${themeTagName}>`;
-        let components = ''; 
+        let template = ''; 
         for (let j = 0; j < route.slots.length; j++) {
             const slot = route.slots[j];
             const slotName = Object.keys(slot)[0];
             const componentTagName = slot[slotName];
             if (slotName === 'main') {
-                components += `<${componentTagName}></${componentTagName}>`;
+                template += `<${componentTagName}></${componentTagName}>`;
             } else {
-                components += `<${componentTagName} slot="${slotName}"></${componentTagName}>`;
+                template += `<${componentTagName} slot="${slotName}"></${componentTagName}>`;
             }
         }
-        // template += `</${themeTagName}>`;
         routes.push({
             path: route.path,
-            components: components
+            template: template
         });
     }
     return routes;
+}
+
+function iterateActionsReducers(
+    glob: string | string[],
+    targetFolder: string, 
+    outputFolder: string, 
+    jsMap: Map<string, any>) {
+    return gulpSrc(glob, (file) => {
+        const content = file.contents.toString();
+        const jsExports = [];
+        let match;
+        do {
+            match = JS_EXPORT_REGEX.exec(content);
+            if (match) {
+                jsExports.push(match[1]);
+            }
+        } while (match);
+        const fileName = path.basename(file.basename, '.js');
+        const relativePath = path.relative(file.base, file.dirname);
+        const jsPath = (relativePath !== '') ? `./${targetFolder}/${relativePath}/${file.basename}` : `./${targetFolder}/${file.basename}`;
+        if (jsMap.has(fileName)) {
+            throw new Error(`Duplicate action or reducer filename ${fileName}`);
+        }
+        jsMap.set(fileName, {
+            exports: jsExports,
+            path: jsPath
+        });
+    })
+    .pipe(gulpDest(outputFolder));
 }
 
 function evalVar(variable: string, site: SambalSiteMeta){
@@ -213,13 +254,28 @@ function generateSharedCss(
     .pipe(gulpDest(outputFolder));
 }
 
+function importActionsAndSelectors(componentPath: string, jsMap: Map<string, any>, actionsAndSelectors: any[]) {
+    for (const name of jsMap.keys()) {
+        const meta = jsMap.get(name);
+        const relativePath = path.relative(componentPath, meta.path);
+        if (meta.exports.length > 0) {
+            actionsAndSelectors.push({
+                imports: meta.exports.join(', '),
+                path: relativePath
+            });
+        }
+    }
+}
+
 function transformTemplate(
     file: any, 
     targetFolder: string, 
     metaMap: Map<string, any>, 
     styleSheetMap: Map<string, any>,
     sharedStyleSheetMap: Map<string, any>,
-    componentMap: Map<string, any>) {
+    componentMap: Map<string, any>,
+    actionMap: Map<string, any>,
+    reducerMap: Map<string, any>) {
     const tagName = path.basename(file.basename, file.extname);
     const relativePath = path.relative(file.base, file.dirname);
     const componentName = getComponentNameFromTagName(tagName);
@@ -236,6 +292,7 @@ function transformTemplate(
     let stateProps = [];
     let attributes = [];
     let includeStyleSheets = [];
+    let actionsAndSelectors = [];
     if (metaMap.has(tagName)) {
         const componentMeta = metaMap.get(tagName);
         properties = componentMeta.properties;
@@ -257,6 +314,9 @@ function transformTemplate(
         
         }
     }
+    importActionsAndSelectors(componentPath, actionMap, actionsAndSelectors);
+    importActionsAndSelectors(componentPath, reducerMap, actionsAndSelectors);
+
     const styleSheet = styleSheetMap.has(tagName) ? `<style>${styleSheetMap.get(tagName)}</style>` : "";
     const template = styleSheet + html;
     let component = '';
@@ -268,6 +328,7 @@ function transformTemplate(
             properties: properties,
             attributes: attributes,
             stateProps: stateProps,
+            actionsAndSelectors: actionsAndSelectors,
             template: template
         });
     } else {
@@ -277,6 +338,7 @@ function transformTemplate(
             componentName: componentName,
             properties: properties,
             attributes: attributes,
+            actionsAndSelectors: actionsAndSelectors,
             template: template
         });
     }
@@ -292,15 +354,17 @@ function generateTemplates(
     metaMap: Map<string, any>, 
     styleSheetMap: Map<string, any>,
     sharedStyleSheetMap: Map<string, any>,
-    componentMap: Map<string, any>) {
+    componentMap: Map<string, any>,
+    actionMap: Map<string, any>,
+    reducerMap: Map<string, any>) {
     return gulpSrc(glob, (file) => {
-        transformTemplate(file, targetFolder, metaMap, styleSheetMap, sharedStyleSheetMap, componentMap);
+        transformTemplate(file, targetFolder, metaMap, styleSheetMap, sharedStyleSheetMap, componentMap, actionMap, reducerMap);
     })
     .pipe(gulpRename(".js"))
     .pipe(gulpDest(outputFolder));
 }
 
-function generateApp(site: SambalSiteMeta, routes: any[], jsFolder: string, componentMap: Map<string, any>) {
+function generateApp(site: SambalSiteMeta, routes: any[], jsFolder: string, componentMap: Map<string, any>, reducerMap: Map<string, any>) {
     const theme = site.theme;
     const themeTagName = `${theme}-theme`;
     const components = [];
@@ -310,9 +374,18 @@ function generateApp(site: SambalSiteMeta, routes: any[], jsFolder: string, comp
             path: `${componentPath}/${tagName}.js`
         })
     }
+    const reducers = [];
+    for (const name of reducerMap.keys()) {
+        const reducerMeta = reducerMap.get(name);
+        reducers.push({
+            name: name,
+            path: reducerMeta.path
+        });
+    }
     const app = APP_TEMPLATE({
         components: components,
         routes: routes,
+        reducers: reducers,
         themeTagName: themeTagName
     });
     return asyncWriteFile(`${jsFolder}/app.js`, app);

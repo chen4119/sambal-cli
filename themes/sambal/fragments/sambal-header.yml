@@ -2,7 +2,7 @@ properties:
     nav:
         init: site.nav
         type: Object
-    page:
+    path:
         init: ''
         type: String
-        state: app.page
+        state: sambal.path

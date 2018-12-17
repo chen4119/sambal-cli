@@ -6,6 +6,8 @@ export interface SambalConfig {
     configFolder?: string;
     componentFolder?: string;
     themeFolder?: string;
+    actionFolder?: string;
+    reducerFolder?: string;
     collectionFolder?: string;
     jsFolder?: string;
 }

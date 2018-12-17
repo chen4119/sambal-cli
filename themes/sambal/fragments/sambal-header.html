@@ -4,6 +4,6 @@
     </app-toolbar>
 
     <nav class="toolbar-list">
-        ${nav.map((link) => html`<a ?selected="${page === link.path}" href="${link.path}">${link.name}</a>`)}
+        ${nav.map((link) => html`<a ?selected="${path === link.path}" href="${link.path}">${link.name}</a>`)}
     </nav>
 </app-header>

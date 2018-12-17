@@ -14,6 +14,8 @@ import {watch} from "./watch";
 const DEFAULT_OPTIONS: SambalConfig = {
     configFolder: "sambal",
     componentFolder: "components",
+    actionFolder: "actions",
+    reducerFolder: "reducers",
     themeFolder: "themes",
     collectionFolder: "collections",
     jsFolder: "js"
@@ -54,6 +56,8 @@ if (program.generate) {
         DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
         DEFAULT_OPTIONS.themeFolder,
+        DEFAULT_OPTIONS.actionFolder,
+        DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder
     );
 } else if (program.collect) {
@@ -84,6 +88,8 @@ async function startWatch() {
         DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
         DEFAULT_OPTIONS.themeFolder,
+        DEFAULT_OPTIONS.actionFolder,
+        DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder
     );
     // await build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
@@ -91,6 +97,8 @@ async function startWatch() {
         DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
         DEFAULT_OPTIONS.themeFolder,
+        DEFAULT_OPTIONS.actionFolder,
+        DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder
     );
 }
