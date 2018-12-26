@@ -1,3 +1,8 @@
+---
+includeStyleSheets:
+    - shared
+---
+
 Ran a startup with a co-founder for 3 years; Led a team of 5 developers as a tech lead in another startup; 12 years of software engineering experience in total, worked on web development, front-end engineering, server application, and mobile app development; Equally fluent and multilingual communicating with humans and computers...slightly prefer computers over humans; Domains of interest in financial technology and web development
 
 <br/>

@@ -1,5 +1,5 @@
+smallScreenSize: 800
 title: Wan Chun Chen
-theme: sambal
 nav:
     - name: About Us!
       path: /about

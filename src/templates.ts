@@ -14,13 +14,10 @@ import {<%=js.imports%>} from '<%=js.path%>';
 <% }); %>
 `;
 
-const COMPONENT_CONSTRUCTOR = `
-constructor() {
-    super();
-    <% _.forEach(properties, function(prop) { %>
-    this.<%-prop.name%> = <%=prop.value%>;
-    <% }); %>
-}
+const COMPONENT_INIT_PROPERTIES = `
+<% _.forEach(properties, function(prop) { %>
+this.<%-prop.name%> = <%=prop.value%>;
+<% }); %>
 `;
 
 const COMPONENT_PROPERTIES = `
@@ -51,13 +48,24 @@ const COMPONENT_CUSTOM_ELEMENTS = `
 customElements.define('<%=tagName%>', <%=componentName%>);
 `;
 
+const STATE_CHANGE_HANDLER = `
+stateChanged(state) {
+    <% _.forEach(stateProps, function(prop) { %>
+    this.<%-prop.name%> = state.<%=prop.state%>;
+    <% }); %>
+}
+`;
+
 export const SIMPLE_COMPONENT: string = `
 ${COMPONENT_IMPORTS}
 ${COMPONENT_IMPORT_ACTIONS_SELECTORS}
 ${COMPONENT_IMPORT_STYLE_SHEETS}
 
-export default class <%=componentName%> extends LitElement {
-    ${COMPONENT_CONSTRUCTOR}
+class <%=componentName%> extends LitElement {
+    constructor() {
+        super();
+        ${COMPONENT_INIT_PROPERTIES}
+    }
     ${COMPONENT_PROPERTIES}
     ${COMPONENT_RENDER}
 }
@@ -71,27 +79,93 @@ import {store} from 'sambal';
 ${COMPONENT_IMPORT_ACTIONS_SELECTORS}
 ${COMPONENT_IMPORT_STYLE_SHEETS}
 
-export default class <%=componentName%> extends connect(store)(LitElement) {
-    ${COMPONENT_CONSTRUCTOR}
-    ${COMPONENT_PROPERTIES}
-    stateChanged(state) {
-        <% _.forEach(stateProps, function(prop) { %>
-        this.<%-prop.name%> = state.<%=prop.state%>;
-        <% }); %>
+class <%=componentName%> extends connect(store)(LitElement) {
+    constructor() {
+        super();
+        ${COMPONENT_INIT_PROPERTIES}
     }
+    ${COMPONENT_PROPERTIES}
+    ${STATE_CHANGE_HANDLER}
     ${COMPONENT_RENDER}
 }
 ${COMPONENT_CUSTOM_ELEMENTS}
 `;
 
+export const APP: string = `
+import {installRouter} from 'pwa-helpers/router.js';
+import {installMediaQueryWatcher} from 'pwa-helpers/media-query.js';
+import {connect} from 'pwa-helpers/connect-mixin.js';
+import {updateLocation, updateScreenSize, receivedLazyResources, store} from 'sambal';
+${COMPONENT_IMPORTS}
+${COMPONENT_IMPORT_ACTIONS_SELECTORS}
+${COMPONENT_IMPORT_STYLE_SHEETS}
 
+const ROUTES = [
+<% _.forEach(routes, function(route) { %>
+{
+    path: '<%=route.path%>',
+    <% if (route.import) { %>
+    import: () => import('<%=route.import%>'),
+    importLoaded: false
+    <% } %>
+},
+<% }); %>
+];
+
+class App extends connect(store)(LitElement) {
+    constructor() {
+        super();
+        this.routeMap = new Map();
+        for (let i = 0; i < ROUTES.length; i++) {
+            this.routeMap.set(ROUTES[i].path, ROUTES[i]);
+        }
+        ${COMPONENT_INIT_PROPERTIES}
+    }
+
+    loadLazyResources() {
+        const lazyLoadComplete = store.getState().sambal.lazyResourcesLoaded;
+        // load lazy resources after render
+        if (!lazyLoadComplete) {
+            requestAnimationFrame(async () => {
+                await import('./lazyResources.js');
+                store.dispatch(receivedLazyResources());
+            });
+        }
+    }
+
+    firstUpdated() {
+        installRouter(async (location) => {
+            const path = decodeURIComponent(location.pathname);
+            if (this.routeMap.has(path)) {
+                const route = this.routeMap.get(path);
+                if (route.import && !route.importLoaded) {
+                    await route.import();
+                    route.importLoaded = true;
+                }
+            }
+            store.dispatch(updateLocation(path));
+            this.loadLazyResources();
+        });
+        installMediaQueryWatcher('(max-width: <%=site.smallScreenSize%>px)', (matches) => store.dispatch(updateScreenSize(matches)));
+
+        // Custom elements polyfill safe way to indicate an element has been upgraded.
+        this.removeAttribute('unresolved');
+    }
+
+    ${COMPONENT_PROPERTIES}
+    ${STATE_CHANGE_HANDLER}
+    ${COMPONENT_RENDER}
+}
+customElements.define('sambal-app', App);
+`;
+
+/*
 export const APP: string = `
 import {html} from '@polymer/lit-element';
 import {connect} from 'pwa-helpers/connect-mixin.js';
 import {SambalApp} from 'sambal';
 import {store} from 'sambal';
 import {main} from './components/css/main.js';
-import './vendor.js';
 
 <% _.forEach(reducers, function(reducer) { %>
 import <%=reducer.name%> from '<%=reducer.path%>';
@@ -104,8 +178,7 @@ import '<%=com.path%>';
 const ROUTES = [
     <% _.forEach(routes, function(route) { %>
     {
-        path: '<%=route.path%>',
-        template: html\`<%=route.template%>\`
+        path: '<%=route.path%>'
     },
     <% }); %>
 ];
@@ -150,6 +223,12 @@ class App extends connect(store)(SambalApp) {
 }
 
 customElements.define('sambal-app', App);
+`;*/
+
+export const LAZY_RESOURCES: string = `
+<% _.forEach(components, function(com) { %>
+import '<%=com.path%>';
+<% }); %>
 `;
 
 export const STYLESHEET: string = `

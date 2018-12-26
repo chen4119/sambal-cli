@@ -1,3 +1,8 @@
+---
+includeStyleSheets:
+    - shared
+---
+
 # __SUMMARY:__
 
 <br/>

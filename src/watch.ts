@@ -3,12 +3,17 @@ import browserSync from 'browser-sync';
 import {generate} from "./generator";
 import {build} from "./build";
 
-export async function watch(configFolder: string, componentFolder: string, themeFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
+export async function watch(configFolder: string, componentFolder: string, sharedCssFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
     const globs = [
         `${configFolder}/site.yml`,
-        `${configFolder}/routes.yml`,
         `${componentFolder}/**/*`,
-        `${themeFolder}/**/*`
+        `${sharedCssFolder}/**/*`,
+        `${actionFolder}/**/*`,
+        `${reducerFolder}/**/*`,
+        './app.css',
+        './app.html',
+        './app.md',
+        './app.yml'
     ];
     const instance = browserSync.create();
     instance.init({
@@ -19,7 +24,7 @@ export async function watch(configFolder: string, componentFolder: string, theme
         proxy: "localhost:8081"
     });
 
-    const generateTask = () => generate(configFolder, componentFolder, themeFolder, actionFolder, reducerFolder, jsFolder);
+    const generateTask = () => generate(configFolder, componentFolder, sharedCssFolder, actionFolder, reducerFolder, jsFolder);
     // const buildTask = () => build(`${jsFolder}/app.js`, output);
     const reloadTask = (cb) => {
         instance.reload();

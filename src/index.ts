@@ -16,7 +16,7 @@ const DEFAULT_OPTIONS: SambalConfig = {
     componentFolder: "components",
     actionFolder: "actions",
     reducerFolder: "reducers",
-    themeFolder: "themes",
+    sharedCssFolder: "css",
     collectionFolder: "collections",
     jsFolder: "js"
 };
@@ -55,7 +55,7 @@ if (program.generate) {
     generate(
         DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
-        DEFAULT_OPTIONS.themeFolder,
+        DEFAULT_OPTIONS.sharedCssFolder,
         DEFAULT_OPTIONS.actionFolder,
         DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder
@@ -87,7 +87,7 @@ async function startWatch() {
     await generate(
         DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
-        DEFAULT_OPTIONS.themeFolder,
+        DEFAULT_OPTIONS.sharedCssFolder,
         DEFAULT_OPTIONS.actionFolder,
         DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder
@@ -96,7 +96,7 @@ async function startWatch() {
     watch(
         DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
-        DEFAULT_OPTIONS.themeFolder,
+        DEFAULT_OPTIONS.sharedCssFolder,
         DEFAULT_OPTIONS.actionFolder,
         DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder

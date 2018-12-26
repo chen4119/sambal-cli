@@ -1,8 +1,0 @@
-properties:
-    title:
-        init: site.title
-        type: String
-        attribute: true
-
-
-
