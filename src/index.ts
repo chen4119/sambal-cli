@@ -1,12 +1,13 @@
 import program from "commander";
 import fs from 'fs';
-import child_process from 'child_process';
+// import child_process from 'child_process';
 import del from "delete";
 import yaml from "js-yaml";
+import {Collection, Type} from "sambal-fs";
 import {version} from "../package.json";
 import {generate} from "./generator";
 import {collect} from "./collector";
-import {SambalConfig, UserDefinedType, UserDefinedCollection} from "./types";
+import {SambalConfig} from "./types";
 import {getYmlCollections} from "./validate";
 import {build} from "./build";
 import {watch} from "./watch";
@@ -21,14 +22,14 @@ const DEFAULT_OPTIONS: SambalConfig = {
     jsFolder: "js"
 };
 
-const BLOG_TYPE: UserDefinedType = {
+const BLOG_TYPE: Type = {
     name: "blog",
-    glob: "data/**/*.md",
+    source: "data/**/*.md",
     primaryKey: "id",
     indexFields: ["year", "tags", "author"]
 }
 
-const ALL_BLOGS_COLLECTION: UserDefinedCollection = {
+const ALL_BLOGS_COLLECTION: Collection = {
     name: "allBlogs",
     type: BLOG_TYPE,
     sortBy: [{
@@ -37,7 +38,7 @@ const ALL_BLOGS_COLLECTION: UserDefinedCollection = {
     }]
 };
 
-const BLOGS_BY_AUTHOR: UserDefinedCollection = {
+const BLOGS_BY_AUTHOR: Collection = {
     name: "blogsByAuthor",
     type: BLOG_TYPE,
     partitionBy: ["tags", "author"]
@@ -62,10 +63,10 @@ if (program.generate) {
     );
 } else if (program.collect) {
     del.sync([`${DEFAULT_OPTIONS.collectionFolder}`]);
-    const content = fs.readFileSync(`${DEFAULT_OPTIONS.configFolder}/collections.yml`, 'utf8');
-    const ymlConfig = yaml.safeLoad(content);
-    const collections: UserDefinedCollection[] = getYmlCollections(ymlConfig.types, ymlConfig.collections);
-    collect(collections, DEFAULT_OPTIONS.collectionFolder);
+    // const content = fs.readFileSync(`${DEFAULT_OPTIONS.configFolder}/collections.yml`, 'utf8');
+    // const ymlConfig = yaml.safeLoad(content);
+    // const collections: Collection[] = getYmlCollections(ymlConfig.types, ymlConfig.collections);
+    collect({types: [BLOG_TYPE], collections: [BLOGS_BY_AUTHOR, ALL_BLOGS_COLLECTION]}, DEFAULT_OPTIONS.collectionFolder);
 } else if (program.build) {
     build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
 } else if (program.watch) {

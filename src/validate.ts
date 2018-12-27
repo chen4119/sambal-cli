@@ -1,13 +1,13 @@
-import {UserDefinedType, UserDefinedCollection} from "./types";
+import {Collection, Type} from "sambal-fs";
 
-export function getYmlCollections(ymlTypes, ymlCollections) {
-    const collections: UserDefinedCollection[] = [];
+export function getYmlCollections(ymlTypes, ymlCollections): Collection[] {
+    const collections: Collection[] = [];
     const typeMap = new Map<string, any>();
 
     for (let i = 0; i < ymlTypes.length; i++) {
         const typeName = Object.keys(ymlTypes[i])[0];
         const typeDef = ymlTypes[i][typeName];
-        const type: UserDefinedType = {
+        const type: Type = {
             ...typeDef,
             name: typeName
         };
@@ -27,7 +27,7 @@ export function getYmlCollections(ymlTypes, ymlCollections) {
                 }
             });
         }
-        const collection: UserDefinedCollection = {
+        const collection: Collection = {
             ...collectionDef,
             name: collectionName,
             type: typeMap.get(collectionDef.type)
@@ -38,12 +38,9 @@ export function getYmlCollections(ymlTypes, ymlCollections) {
     return collections;
 }
 
-function validateType(type: UserDefinedType) {
+function validateType(type: Type) {
     if (typeof(type.name) !== 'string' || type.name === '') {
         throw new Error(`Invalid name for type: ${type}`);
-    }
-    if (typeof(type.glob) !== 'string' && !Array.isArray(type.glob)) {
-        throw new Error(`Invalid glob for type: ${type.name}`);
     }
     if (typeof(type.primaryKey) !== 'string' && !Array.isArray(type.primaryKey)) {
         throw new Error(`Invalid primary key for type: ${type.name}`);
@@ -53,6 +50,6 @@ function validateType(type: UserDefinedType) {
     }
 }
 
-function validateCollection(collection: UserDefinedCollection) {
+function validateCollection(collection: Collection) {
     // console.log(collection);
 }
