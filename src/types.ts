@@ -12,6 +12,11 @@ export interface SambalConfig {
     jsFolder?: string;
 }
 
+export interface UserDefinedRoute {
+    path: string;
+    import?: string;
+}
+
 export interface UserDefinedCollection {
     name: string;
     type: UserDefinedType;
@@ -24,18 +29,6 @@ export interface UserDefinedType {
     glob: string | string[];
     primaryKey: string | string[];
     indexFields?: string[];
-}
-
-export interface UserDefinedRoute {
-    path: string;
-    slots: any[];
-    fetch?: Fetch;
-}
-
-export interface Fetch {
-    collection?: string;
-    type?: string;
-
 }
 
 export interface Manifest {

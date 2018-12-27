@@ -7,7 +7,7 @@ import marked from "marked";
 
 import {gulpSeries, gulpParallel, gulpSrc, gulpRename, gulpDest} from './gulp';
 import {SIMPLE_COMPONENT, REDUX_COMPONENT, APP, STYLESHEET, LAZY_RESOURCES} from './templates';
-import {SambalSiteMeta} from './types';
+import {SambalSiteMeta, UserDefinedRoute} from './types';
 import {
     getComponentNameFromTagName,
     getPropertyValue,
@@ -30,7 +30,7 @@ export async function generate(configFolder: string, componentFolder: string, sh
     if (!site) {
         site = {smallScreenSize: 767};
     }
-    const routes = [];
+    const routes: UserDefinedRoute[] = [];
     const styleSheetMap = new Map<string, any>();
     const sharedStyleSheetMap = new Map<string, any>();
     const componentMap = new Map<string, any>();
@@ -100,7 +100,7 @@ function clean(jsFolder: string) {
     ]);
 }
 
-async function getRoutes(routesPath: string, routes: any[], componentMap: Map<string, any>) {
+async function getRoutes(routesPath: string, routes: UserDefinedRoute[], componentMap: Map<string, any>) {
     const routesContent = await asyncReadFile(routesPath);
     const routesMeta = yaml.safeLoad(routesContent.toString());
     if (routesMeta) {
@@ -339,7 +339,7 @@ function generateComponents(
     .pipe(gulpDest(`${jsFolder}/components`));
 }
 
-function generateLazyResourceFile(jsFolder: string, routes: any, componentMap: Map<string, any>) {
+function generateLazyResourceFile(jsFolder: string, routes: UserDefinedRoute[], componentMap: Map<string, any>) {
     const lazyComponents = [];
     for (const tagName of componentMap.keys()) {
         if (routes.findIndex((r) => r.import === tagName) < 0) {
@@ -357,7 +357,7 @@ function generateLazyResourceFile(jsFolder: string, routes: any, componentMap: M
 
 function generateApp(
     site: SambalSiteMeta,
-    routes: any[],
+    routes: UserDefinedRoute[],
     jsFolder: string,
     styleSheetMap: Map<string, any>,
     sharedStyleSheetMap: Map<string, any>,

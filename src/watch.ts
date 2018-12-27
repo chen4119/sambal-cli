@@ -6,14 +6,14 @@ import {build} from "./build";
 export async function watch(configFolder: string, componentFolder: string, sharedCssFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
     const globs = [
         `${configFolder}/site.yml`,
+        `${configFolder}/routes.yml`,
         `${componentFolder}/**/*`,
         `${sharedCssFolder}/**/*`,
         `${actionFolder}/**/*`,
         `${reducerFolder}/**/*`,
         './app.css',
         './app.html',
-        './app.md',
-        './app.yml'
+        './app.md'
     ];
     const instance = browserSync.create();
     instance.init({
