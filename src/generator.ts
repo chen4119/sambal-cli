@@ -114,7 +114,8 @@ async function getRoutes(routesPath: string, routes: UserDefinedRoute[], compone
                 const componentPath = componentMap.get(route.import);
                 routes.push({
                     path: route.path,
-                    import: `${componentPath}/${route.import}.js`
+                    import: route.import,
+                    importPath: `${componentPath}/${route.import}.js`
                 });
             } else {
                 routes.push({path: route.path});

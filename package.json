@@ -1,7 +1,7 @@
 {
     "name": "sambal-cli",
-    "version": "0.0.2",
-    "description": "A static site generator built with web components",
+    "version": "0.0.3",
+    "description": "Sambal CLI tools",
     "main": "index.js",
     "repository": {
         "type": "git",

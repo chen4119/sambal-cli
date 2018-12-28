@@ -15,4 +15,5 @@ export interface SambalConfig {
 export interface UserDefinedRoute {
     path: string;
     import?: string;
+    [propName: string]: any;
 }

@@ -105,7 +105,7 @@ const ROUTES = [
 {
     path: '<%=route.path%>',
     <% if (route.import) { %>
-    import: () => import('<%=route.import%>'),
+    import: () => import('<%=route.importPath%>'),
     importLoaded: false
     <% } %>
 },
