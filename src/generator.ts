@@ -225,11 +225,7 @@ function generateSharedCss(sharedCssFolder: string, jsFolder: string, sharedStyl
 function importActionsAndSelectors(componentPath: string, jsMap: Map<string, any>, actionsAndSelectors: any[]) {
     for (const name of jsMap.keys()) {
         const meta = jsMap.get(name);
-        let relativePath = path.relative(componentPath, meta.path);
-        // path needs to begin with ./
-        if (relativePath.indexOf('.') !== 0) {
-            relativePath = `./${relativePath}`;
-        }
+        const relativePath = getRelativePath(componentPath, meta.path);
         if (meta.exports.length > 0) {
             actionsAndSelectors.push({
                 imports: meta.exports.join(', '),
@@ -259,9 +255,7 @@ function transformComponentTemplate(
     if (file.extname === '.md') {
         html = marked(html);
     }
-    console.log(tagName);
-    console.log(frontMatter.data);
-    const componentProps = getComponentProps(site, frontMatter.data);
+    const componentProps = getComponentProps(site, componentPath, frontMatter.data, reducerMap);
     const includeStyleSheets = getIncludeStyleSheets(frontMatter.data, componentPath, sharedStyleSheetMap);
     let actionsAndSelectors = [];
     importActionsAndSelectors(componentPath, actionMap, actionsAndSelectors);
@@ -278,6 +272,7 @@ function transformComponentTemplate(
             properties: componentProps.properties,
             attributes: componentProps.attributes,
             stateProps: componentProps.stateProps,
+            reducers: componentProps.reducers,
             actionsAndSelectors: actionsAndSelectors,
             template: template
         });
@@ -288,6 +283,7 @@ function transformComponentTemplate(
             componentName: componentName,
             properties: componentProps.properties,
             attributes: componentProps.attributes,
+            reducers: componentProps.reducers,
             actionsAndSelectors: actionsAndSelectors,
             template: template
         });
@@ -296,16 +292,43 @@ function transformComponentTemplate(
     componentMap.set(tagName, componentPath);
 }
 
-function getComponentProps(site: SambalSiteMeta, frontMatter: any) {
+function getRelativePath(relativeFrom: string, relativeTo: string) {
+    let relativePath = path.relative(relativeFrom, relativeTo);
+    // path needs to begin with ./
+    if (relativePath.indexOf('.') !== 0) {
+        relativePath = `./${relativePath}`;
+    }
+    return relativePath;
+}
+
+function getComponentProps(site: SambalSiteMeta, componentPath: string, frontMatter: any, reducerMap: Map<string, any>) {
     let stateProps = [];
     let attributes = [];
+    let reducers = [];
     const properties = parseProperties(site, frontMatter);
     attributes = properties.filter((p) => typeof(p.state) !== 'undefined' || p.attribute);
     stateProps = properties.filter((p) => typeof(p.state) !== 'undefined');
+    if (frontMatter.loadReducers) {
+        if (typeof(frontMatter.loadReducers) === 'string') {
+            reducers.push(frontMatter.loadReducers);
+        } else if (Array.isArray(frontMatter.loadReducers)) {
+            reducers = frontMatter.loadReducers;
+        }
+        reducers = reducers.map((reducer) => {
+            if (!reducerMap.has(reducer)) {
+                throw new Error(`reducer ${reducer} not found`);
+            }
+            return {
+                name: reducer,
+                path: getRelativePath(componentPath, reducerMap.get(reducer).path)
+            }
+        });
+    }
     return {
         properties: properties,
         stateProps: stateProps,
-        attributes: attributes
+        attributes: attributes,
+        reducers: reducers
     };
 }
 
@@ -321,10 +344,7 @@ function getIncludeStyleSheets(frontMatter: any, componentPath: string, sharedSt
         for (const styleName of includes) {
             if (sharedStyleSheetMap.has(styleName)) {
                 const styleSheetRelativePath = sharedStyleSheetMap.get(styleName);
-                let styleSheetPath = path.relative(componentPath, `./css/${styleSheetRelativePath}`);
-                if (styleSheetPath.indexOf('.') !== 0) {
-                    styleSheetPath = `./${styleSheetPath}`;
-                }
+                const styleSheetPath = getRelativePath(componentPath, `./css/${styleSheetRelativePath}`);
                 includeStyleSheets.push({
                     name: styleName,
                     path: styleSheetPath
@@ -348,7 +368,6 @@ function parseProperties(site: SambalSiteMeta, frontMatter: any) {
         for (let i = 0; i < propKeys.length; i++) {
             const propName = propKeys[i];
             const prop = frontMatter.properties[propName];
-            console.log(prop);
             const property = {
                 name: propName,
                 type: prop.type,
@@ -419,7 +438,7 @@ function generateApp(
         if (file.extname === '.md') {
             html = marked(html);
         }
-        const componentProps = getComponentProps(site, frontMatter.data);
+        const componentProps = getComponentProps(site, componentPath, frontMatter.data, reducerMap);
         const includeStyleSheets = getIncludeStyleSheets(frontMatter.data, componentPath, sharedStyleSheetMap);
         let actionsAndSelectors = [];
         importActionsAndSelectors(componentPath, actionMap, actionsAndSelectors);
@@ -442,6 +461,7 @@ function generateApp(
             properties: [...componentProps.properties, internalPathProperty],
             attributes: [...componentProps.attributes, internalPathProperty],
             stateProps: [...componentProps.stateProps, internalPathProperty],
+            reducers: componentProps.reducers,
             actionsAndSelectors: actionsAndSelectors,
             template: template
         });

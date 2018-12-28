@@ -4,6 +4,7 @@ import {repeat} from 'lit-html/directives/repeat';
 import {ifDefined} from 'lit-html/directives/if-defined';
 import {guard} from 'lit-html/directives/guard';
 import {until} from 'lit-html/directives/until.js';
+import {store} from 'sambal';
 `;
 
 const COMPONENT_IMPORT_STYLE_SHEETS = `
@@ -27,6 +28,15 @@ this.<%-prop.name%> = <%=prop.value%>;
 const COMPONENT_IMPORT_INCLUDES = `
 <% _.forEach(includes, function(path) { %>
 import '<%=path%>';
+<% }); %>
+`;
+
+const COMPONENT_LOAD_REDUCERS = `
+<% _.forEach(reducers, function(reducer) { %>
+import <%=reducer.name%> from '<%=reducer.path%>';
+store.addReducers({
+    <%=reducer.name%>
+});
 <% }); %>
 `;
 
@@ -72,6 +82,7 @@ export const SIMPLE_COMPONENT: string = `
 ${COMPONENT_IMPORTS}
 ${COMPONENT_IMPORT_ACTIONS_SELECTORS}
 ${COMPONENT_IMPORT_STYLE_SHEETS}
+${COMPONENT_LOAD_REDUCERS}
 
 class <%=componentName%> extends LitElement {
     constructor() {
@@ -87,9 +98,9 @@ ${COMPONENT_CUSTOM_ELEMENTS}
 export const REDUX_COMPONENT: string = `
 ${COMPONENT_IMPORTS}
 import {connect} from 'pwa-helpers/connect-mixin.js';
-import {store} from 'sambal';
 ${COMPONENT_IMPORT_ACTIONS_SELECTORS}
 ${COMPONENT_IMPORT_STYLE_SHEETS}
+${COMPONENT_LOAD_REDUCERS}
 
 class <%=componentName%> extends connect(store)(LitElement) {
     constructor() {
@@ -108,11 +119,12 @@ import {installRouter} from 'pwa-helpers/router.js';
 import {installMediaQueryWatcher} from 'pwa-helpers/media-query.js';
 import {connect} from 'pwa-helpers/connect-mixin.js';
 import {updateMetadata} from 'pwa-helpers/metadata.js';
-import {updateLocation, updateScreenSize, receivedLazyResources, store} from 'sambal';
+import {updateLocation, updateScreenSize, receivedLazyResources} from 'sambal';
 ${COMPONENT_IMPORTS}
 ${COMPONENT_IMPORT_ACTIONS_SELECTORS}
 ${COMPONENT_IMPORT_STYLE_SHEETS}
 ${COMPONENT_IMPORT_INCLUDES}
+${COMPONENT_LOAD_REDUCERS}
 
 const ROUTES = [
 <% _.forEach(routes, function(route) { %>
