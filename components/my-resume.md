@@ -1,5 +1,5 @@
 ---
-includeStyleSheets:
+includeStyleSheets: 
     - shared
 ---
 

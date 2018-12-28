@@ -5,6 +5,7 @@
         "js/**/*"
     ],
     "extraDependencies": [
+        "data/**",
         "node_modules/@webcomponents/webcomponentsjs/**"
     ],
     "builds": [

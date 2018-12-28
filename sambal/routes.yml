@@ -1,9 +1,15 @@
 - route:
     path: /
     import: about-me
+    title: Home page
 - route:
     path: /about
     import: about-me
+    title: About me
+    description: About Wan Chun Chen
 - route:
     path: /resume
     import: my-resume
+- notfound:
+    path: /404
+    import: not-found

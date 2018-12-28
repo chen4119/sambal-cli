@@ -3,12 +3,12 @@ import fs from 'fs';
 // import child_process from 'child_process';
 import del from "delete";
 import yaml from "js-yaml";
-import {Collection, Type} from "sambal-fs";
+import {Collection, Type, Schema} from "sambal-fs";
 import {version} from "../package.json";
 import {generate} from "./generator";
 import {collect} from "./collector";
 import {SambalConfig} from "./types";
-import {getYmlCollections} from "./validate";
+import {parseSchemaYmlFile} from "./validate";
 import {build} from "./build";
 import {watch} from "./watch";
 
@@ -18,7 +18,7 @@ const DEFAULT_OPTIONS: SambalConfig = {
     actionFolder: "actions",
     reducerFolder: "reducers",
     sharedCssFolder: "css",
-    collectionFolder: "collections",
+    dataFolder: "data",
     jsFolder: "js"
 };
 
@@ -62,11 +62,11 @@ if (program.generate) {
         DEFAULT_OPTIONS.jsFolder
     );
 } else if (program.collect) {
-    del.sync([`${DEFAULT_OPTIONS.collectionFolder}`]);
-    // const content = fs.readFileSync(`${DEFAULT_OPTIONS.configFolder}/collections.yml`, 'utf8');
-    // const ymlConfig = yaml.safeLoad(content);
-    // const collections: Collection[] = getYmlCollections(ymlConfig.types, ymlConfig.collections);
-    collect({types: [BLOG_TYPE], collections: [BLOGS_BY_AUTHOR, ALL_BLOGS_COLLECTION]}, DEFAULT_OPTIONS.collectionFolder);
+    del.sync([`${DEFAULT_OPTIONS.dataFolder}`]);
+    const content = fs.readFileSync(`${DEFAULT_OPTIONS.configFolder}/schema.yml`, 'utf8');
+    const ymlConfig = yaml.safeLoad(content);
+    const schema: Schema = parseSchemaYmlFile(ymlConfig);
+    collect(schema, DEFAULT_OPTIONS.dataFolder);
 } else if (program.build) {
     build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
 } else if (program.watch) {

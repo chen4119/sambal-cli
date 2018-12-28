@@ -1,12 +1,18 @@
-import {Collection, Type} from "sambal-fs";
+import {Schema, Collection, Type} from "sambal-fs";
 
-export function getYmlCollections(ymlTypes, ymlCollections): Collection[] {
+export function parseSchemaYmlFile(ymlObj: any): Schema {
+    if (!ymlObj) {
+        throw new Error('Invalid schema file');
+    }
+    if (!ymlObj.types) {
+        throw new Error('No types defined in schema file');
+    }
+
     const collections: Collection[] = [];
     const typeMap = new Map<string, any>();
-
-    for (let i = 0; i < ymlTypes.length; i++) {
-        const typeName = Object.keys(ymlTypes[i])[0];
-        const typeDef = ymlTypes[i][typeName];
+    for (let i = 0; i < ymlObj.types.length; i++) {
+        const typeName = Object.keys(ymlObj.types[i])[0];
+        const typeDef = ymlObj.types[i][typeName];
         const type: Type = {
             ...typeDef,
             name: typeName
@@ -14,9 +20,9 @@ export function getYmlCollections(ymlTypes, ymlCollections): Collection[] {
         validateType(type);
         typeMap.set(typeName, type);
     }
-    for (let i = 0; i < ymlCollections.length; i++) {
-        const collectionName = Object.keys(ymlCollections[i])[0];
-        const collectionDef = ymlCollections[i][collectionName];
+    for (let i = 0; i < ymlObj.collections.length; i++) {
+        const collectionName = Object.keys(ymlObj.collections[i])[0];
+        const collectionDef = ymlObj.collections[i][collectionName];
         if (collectionDef.sortBy) {
             collectionDef.sortBy = collectionDef.sortBy.map((sort) => {
                 const sortField = Object.keys(sort)[0];
@@ -35,7 +41,10 @@ export function getYmlCollections(ymlTypes, ymlCollections): Collection[] {
         validateCollection(collection);
         collections.push(collection);
     }
-    return collections;
+    return {
+        types: [...typeMap.values()],
+        collections: collections
+    };
 }
 
 function validateType(type: Type) {

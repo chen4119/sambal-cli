@@ -3,11 +3,17 @@
     <switch-route path="/">
         <about-me></about-me>
     </switch-route>
-    <switch-route path="/about">
+    <switch-route path="/about" @active="${() => {
+        console.log('fetching');
+        store.dispatch(fetchBlog());
+    }}">
         <about-me></about-me>
     </switch-route>
     <switch-route path="/resume">
         <my-resume></my-resume>
+    </switch-route>
+    <switch-route path="/404">
+        <not-found></not-found>
     </switch-route>
 </main>
 <sambal-footer></sambal-footer>

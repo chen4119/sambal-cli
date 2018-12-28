@@ -8,12 +8,20 @@ export interface SambalConfig {
     sharedCssFolder?: string;
     actionFolder?: string;
     reducerFolder?: string;
-    collectionFolder?: string;
+    dataFolder?: string;
     jsFolder?: string;
 }
 
 export interface UserDefinedRoute {
+    type: ROUTE_TYPE;
     path: string;
     import?: string;
+    title?: string;
+    description?: string;
     [propName: string]: any;
 }
+
+export enum ROUTE_TYPE {
+    ROUTE = 'route',
+    NOT_FOUND = 'notfound'
+};

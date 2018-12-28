@@ -1,23 +1,22 @@
 import {
-    OPEN_SNACKBAR,
-    CLOSE_SNACKBAR
+    GET_BLOG_POST
 } from '../actions/app.js';
-  
+import {html} from '@polymer/lit-element';
+
 const INITIAL_STATE = {
-    snackbarOpened: false
+    blogPost: null
 };
+
+const getTemplate = function(templateString, html){
+    return new Function('html', "return html`"+templateString +"`;").call(this, html);
+}
 
 const app = (state = INITIAL_STATE, action) => {
     switch (action.type) {
-        case OPEN_SNACKBAR:
+        case GET_BLOG_POST:
             return {
                 ...state,
-                snackbarOpened: true
-            };
-        case CLOSE_SNACKBAR:
-            return {
-                ...state,
-                snackbarOpened: false
+                blogPost: getTemplate(action.content, html)
             };
         default:
             return state;

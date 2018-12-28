@@ -7,6 +7,8 @@ export async function watch(configFolder: string, componentFolder: string, share
     const globs = [
         `${configFolder}/site.yml`,
         `${configFolder}/routes.yml`,
+        `${configFolder}/eager.js`,
+        `${configFolder}/lazy.js`,
         `${componentFolder}/**/*`,
         `${sharedCssFolder}/**/*`,
         `${actionFolder}/**/*`,

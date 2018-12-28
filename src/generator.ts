@@ -7,7 +7,7 @@ import marked from "marked";
 
 import {gulpSeries, gulpParallel, gulpSrc, gulpRename, gulpDest} from './gulp';
 import {SIMPLE_COMPONENT, REDUX_COMPONENT, APP, STYLESHEET, LAZY_RESOURCES} from './templates';
-import {SambalSiteMeta, UserDefinedRoute} from './types';
+import {SambalSiteMeta, UserDefinedRoute, ROUTE_TYPE} from './types';
 import {
     getComponentNameFromTagName,
     getPropertyValue,
@@ -36,11 +36,14 @@ export async function generate(configFolder: string, componentFolder: string, sh
     const componentMap = new Map<string, any>();
     const actionMap = new Map<string, any>();
     const reducerMap = new Map<string, any>();
+    const eagerIncludeList: string[] = [];
+    const lazyIncludeList: string[] = []; 
     const cleanTask = (cb) => {
         clean(jsFolder);
         cb();
     };
     const getRoutesTask = () => getRoutes(`${configFolder}/routes.yml`, routes, componentMap);
+    const copyUserIncludeFilesTask = () => copyUserIncludeFiles(configFolder, jsFolder, eagerIncludeList, lazyIncludeList);
     const iterateActionsTask = () => iterateActionsReducers(`${actionFolder}/**/*`, 'actions', `${jsFolder}/actions`, actionMap);
     const iterateReducersTask = () => iterateActionsReducers(`${reducerFolder}/**/*`, 'reducers', `${jsFolder}/reducers`, reducerMap);
     const iterateComponentCssTask = () => iterateComponentCss(componentFolder, styleSheetMap);
@@ -59,7 +62,7 @@ export async function generate(configFolder: string, componentFolder: string, sh
         actionMap,
         reducerMap
     );
-    const generateLazyResourceFileTask = () => generateLazyResourceFile(jsFolder, routes, componentMap);
+    const generateLazyResourceFileTask = () => generateLazyResourceFile(jsFolder, routes, componentMap, lazyIncludeList);
     const generateAppTask = () => generateApp(
         site,
         routes,
@@ -67,8 +70,10 @@ export async function generate(configFolder: string, componentFolder: string, sh
         styleSheetMap, 
         sharedStyleSheetMap,
         actionMap, 
-        reducerMap);
+        reducerMap,
+        eagerIncludeList);
     const buildDependencies = gulpParallel(
+            copyUserIncludeFilesTask,
             iterateComponentCssTask,
             generateSharedCssTask,
             iterateActionsTask,
@@ -100,27 +105,54 @@ function clean(jsFolder: string) {
     ]);
 }
 
+function copyUserIncludeFiles(configFolder: string, jsFolder: string, eagerIncludeList: string[], lazyIncludeList: string[]) {
+    return gulpSrc([`${configFolder}/eager.js`, `${configFolder}/lazy.js`], (file) => {
+        if (file.basename === 'eager.js') {
+            eagerIncludeList.push('./eager.js');
+        }
+        if (file.basename === 'lazy.js') {
+            lazyIncludeList.push('./lazy.js');
+        }
+    })
+    .pipe(gulpDest(jsFolder));
+}
+
 async function getRoutes(routesPath: string, routes: UserDefinedRoute[], componentMap: Map<string, any>) {
     const routesContent = await asyncReadFile(routesPath);
     const routesMeta = yaml.safeLoad(routesContent.toString());
     if (routesMeta) {
+        let isNotFoundDefined:boolean = false;
         for (let i = 0; i < routesMeta.length; i++) {
-            const route = routesMeta[i].route;
-
-            if (route.import) {
-                if (!componentMap.has(route.import)) {
-                    throw new Error(`Unable to find path for route import ${route.import}`);
-                }
-                const componentPath = componentMap.get(route.import);
-                routes.push({
-                    path: route.path,
-                    import: route.import,
-                    importPath: `${componentPath}/${route.import}.js`
-                });
-            } else {
-                routes.push({path: route.path});
+            if (routesMeta[i].route) {
+                addRoute(routes, {
+                    type: ROUTE_TYPE.ROUTE,
+                    ...routesMeta[i].route
+                }, componentMap);
+            } else if (!isNotFoundDefined && routesMeta[i].notfound) {
+                addRoute(routes, {
+                    type: ROUTE_TYPE.NOT_FOUND,
+                    ...routesMeta[i].notfound
+                }, componentMap);
+                isNotFoundDefined = true;
+            } else if (isNotFoundDefined) {
+                throw new Error(`Only one notfound route is allowed`);
             }
         }
+    }
+}
+
+function addRoute(routes: UserDefinedRoute[], route: UserDefinedRoute, componentMap: Map<string, any>) {
+    if (route.import) {
+        if (!componentMap.has(route.import)) {
+            throw new Error(`Unable to find path for route import ${route.import}`);
+        }
+        const componentPath = componentMap.get(route.import);
+        routes.push({
+            ...route,
+            importPath: `${componentPath}/${route.import}.js`
+        });
+    } else {
+        routes.push(route);
     }
 }
 
@@ -227,6 +259,8 @@ function transformComponentTemplate(
     if (file.extname === '.md') {
         html = marked(html);
     }
+    console.log(tagName);
+    console.log(frontMatter.data);
     const componentProps = getComponentProps(site, frontMatter.data);
     const includeStyleSheets = getIncludeStyleSheets(frontMatter.data, componentPath, sharedStyleSheetMap);
     let actionsAndSelectors = [];
@@ -278,7 +312,13 @@ function getComponentProps(site: SambalSiteMeta, frontMatter: any) {
 function getIncludeStyleSheets(frontMatter: any, componentPath: string, sharedStyleSheetMap: Map<string, any>) {
     const includeStyleSheets = [];
     if (frontMatter.includeStyleSheets) {
-        for (const styleName of frontMatter.includeStyleSheets) {
+        let includes = [];
+        if (typeof(frontMatter.includeStyleSheets) === 'string') {
+            includes.push(frontMatter.includeStyleSheets);
+        } else if (Array.isArray(frontMatter.includeStyleSheets)) {
+            includes = frontMatter.includeStyleSheets;
+        }
+        for (const styleName of includes) {
             if (sharedStyleSheetMap.has(styleName)) {
                 const styleSheetRelativePath = sharedStyleSheetMap.get(styleName);
                 let styleSheetPath = path.relative(componentPath, `./css/${styleSheetRelativePath}`);
@@ -289,6 +329,8 @@ function getIncludeStyleSheets(frontMatter: any, componentPath: string, sharedSt
                     name: styleName,
                     path: styleSheetPath
                 });
+            } else {
+                throw new Error(`Style sheet ${styleName} not found`);
             }
         }
     }
@@ -306,17 +348,20 @@ function parseProperties(site: SambalSiteMeta, frontMatter: any) {
         for (let i = 0; i < propKeys.length; i++) {
             const propName = propKeys[i];
             const prop = frontMatter.properties[propName];
+            console.log(prop);
             const property = {
                 name: propName,
                 type: prop.type,
                 attribute: prop.attribute ? true : false,
-                value: '',
+                value: 'null', // null value
                 state: prop.state
             };
-            if (typeof(prop.init) === 'string' && prop.init.indexOf('site.') === 0) {
-                property.value = getPropertyValue(prop.type, evalVar(site, prop.init));
-            } else {
-                property.value = getPropertyValue(prop.type, prop.init);
+            if (prop.init) {
+                if (typeof(prop.init) === 'string' && prop.init.indexOf('site.') === 0) {
+                    property.value = getPropertyValue(prop.type, evalVar(site, prop.init));
+                } else {
+                    property.value = getPropertyValue(prop.type, prop.init);
+                }
             }
             properties.push(property);
         }
@@ -340,7 +385,7 @@ function generateComponents(
     .pipe(gulpDest(`${jsFolder}/components`));
 }
 
-function generateLazyResourceFile(jsFolder: string, routes: UserDefinedRoute[], componentMap: Map<string, any>) {
+function generateLazyResourceFile(jsFolder: string, routes: UserDefinedRoute[], componentMap: Map<string, any>, lazyIncludes: string[]) {
     const lazyComponents = [];
     for (const tagName of componentMap.keys()) {
         if (routes.findIndex((r) => r.import === tagName) < 0) {
@@ -351,6 +396,7 @@ function generateLazyResourceFile(jsFolder: string, routes: UserDefinedRoute[], 
         }
     }
     const lazyResources = LAZY_RESOURCES_TEMPLATE({
+        includes: lazyIncludes,
         components: lazyComponents
     });
     return asyncWriteFile(`${jsFolder}/lazyResources.js`, lazyResources);
@@ -363,7 +409,8 @@ function generateApp(
     styleSheetMap: Map<string, any>,
     sharedStyleSheetMap: Map<string, any>,
     actionMap: Map<string, any>,
-    reducerMap: Map<string, any>) {
+    reducerMap: Map<string, any>,
+    eagerIncludes: string[]) {
     return gulpSrc(['./app.html', './app.md'], (file) => {
         const componentPath = './';
 
@@ -379,15 +426,22 @@ function generateApp(
         importActionsAndSelectors(componentPath, reducerMap, actionsAndSelectors);
 
         const styleSheetName = 'app';
+        const internalPathProperty = {name: '_path_', type: 'String', value: '"/"', state: 'sambal.path'};
+        const properties = [
+            ...componentProps.properties,
+            internalPathProperty
+        ];
+
         const styleSheet = styleSheetMap.has(styleSheetName) ? `<style>${styleSheetMap.get(styleSheetName)}</style>` : "";
         const template = styleSheet + html;
         const app = APP_TEMPLATE({
             site: site,
             routes: routes,
+            includes: eagerIncludes,
             includeStyleSheets: includeStyleSheets,
-            properties: componentProps.properties,
-            attributes: componentProps.attributes,
-            stateProps: componentProps.stateProps,
+            properties: [...componentProps.properties, internalPathProperty],
+            attributes: [...componentProps.attributes, internalPathProperty],
+            stateProps: [...componentProps.stateProps, internalPathProperty],
             actionsAndSelectors: actionsAndSelectors,
             template: template
         });

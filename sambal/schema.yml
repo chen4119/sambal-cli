@@ -1,6 +1,6 @@
 types:
     - blog:
-          glob: data/**/*.md
+          source: blogs/**/*.md
           primaryKey: id
           indexFields: [year, tags, author]
 
