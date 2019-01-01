@@ -1,5 +1,13 @@
+import {Type} from "sambal-fs";
+
 export interface SambalSiteMeta {
     smallScreenSize: number;
+}
+
+export interface DataSource {
+    name: string;
+    type: Type;
+    glob?: string | string[];
 }
 
 export interface SambalConfig {

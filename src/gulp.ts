@@ -13,9 +13,9 @@ export const gulpWatch = gulp.watch;
 
 export function asyncGlob(glob: string | string[], process: Function) {
     return new Promise(function(resolve, reject) {
-        const stream = gulp.src(glob).pipe(through2.obj(function(file, enc, cb) {
+        const stream = gulp.src(glob).pipe(through2.obj(async (file, enc, cb) => {
             if (file.isBuffer()) {
-                process(file);
+                await process(file);
             }
             cb(null, file);
         }));
@@ -27,9 +27,9 @@ export function asyncGlob(glob: string | string[], process: Function) {
 }
 
 export function gulpSrc(glob: string | string[], process: Function) {
-    return gulp.src(glob, {allowEmpty: true}).pipe(through2.obj(function(file, enc, cb) {
+    return gulp.src(glob, {allowEmpty: true}).pipe(through2.obj(async (file, enc, cb) => {
         if (file.isBuffer()) {
-            process(file);
+            await process(file);
         }
         cb(null, file);
     }));

@@ -3,14 +3,15 @@ import fs from 'fs';
 // import child_process from 'child_process';
 import del from "delete";
 import yaml from "js-yaml";
-import {Collection, Type, Schema} from "sambal-fs";
+import {SambalWriter, Schema, Collection, Type} from "sambal-fs";
 import {version} from "../package.json";
 import {generate} from "./generator";
 import {collect} from "./collector";
 import {SambalConfig} from "./types";
-import {parseSchemaYmlFile} from "./validate";
+import {parseDataYmlFile} from "./validate";
 import {build} from "./build";
 import {watch} from "./watch";
+import { types } from "util";
 
 const DEFAULT_OPTIONS: SambalConfig = {
     configFolder: "sambal",
@@ -24,9 +25,10 @@ const DEFAULT_OPTIONS: SambalConfig = {
 
 const BLOG_TYPE: Type = {
     name: "blog",
-    source: "data/**/*.md",
+    // source: "blogs/**/*.md",
     primaryKey: "id",
-    indexFields: ["year", "tags", "author"]
+    indexFields: ["year", "tags", "author"],
+    contentType: 'markdown'
 }
 
 const ALL_BLOGS_COLLECTION: Collection = {
@@ -63,10 +65,11 @@ if (program.generate) {
     );
 } else if (program.collect) {
     del.sync([`${DEFAULT_OPTIONS.dataFolder}`]);
-    const content = fs.readFileSync(`${DEFAULT_OPTIONS.configFolder}/schema.yml`, 'utf8');
+    const content = fs.readFileSync(`${DEFAULT_OPTIONS.configFolder}/data.yml`, 'utf8');
     const ymlConfig = yaml.safeLoad(content);
-    const schema: Schema = parseSchemaYmlFile(ymlConfig);
-    collect(schema, DEFAULT_OPTIONS.dataFolder);
+    const data = parseDataYmlFile(ymlConfig);
+    const schema: Schema = {types: data.types, collections: data.collections};
+    collect(data.sources, schema, DEFAULT_OPTIONS.dataFolder);
 } else if (program.build) {
     build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
 } else if (program.watch) {
