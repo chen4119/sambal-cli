@@ -3,7 +3,7 @@ import fs from 'fs';
 // import child_process from 'child_process';
 import del from "delete";
 import yaml from "js-yaml";
-import {SambalWriter, Schema, Collection, Type} from "sambal-fs";
+import {Schema, Collection, Type} from "sambal-fs";
 import {version} from "../package.json";
 import {generate} from "./generator";
 import {collect} from "./collector";

@@ -1,6 +1,6 @@
 {
     "name": "sambal-cli",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "description": "Sambal CLI tools",
     "main": "index.js",
     "repository": {
