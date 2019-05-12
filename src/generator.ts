@@ -454,7 +454,8 @@ function generateApp(
         const styleSheet = styleSheetMap.has(styleSheetName) ? `<style>${styleSheetMap.get(styleSheetName)}</style>` : "";
         const template = styleSheet + html;
         const app = APP_TEMPLATE({
-            site: site,
+            site: JSON.stringify(site),
+            smallScreenSize: site.smallScreenSize,
             routes: routes,
             includes: eagerIncludes,
             includeStyleSheets: includeStyleSheets,

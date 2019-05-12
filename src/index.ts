@@ -5,7 +5,8 @@ import del from "delete";
 import yaml from "js-yaml";
 import {Schema, Collection, Type} from "sambal-fs";
 import {version} from "../package.json";
-import {generate} from "./generator";
+// import {generate} from "./generator";
+import CodeGenerator from "./codegen";
 import {collect} from "./collector";
 import {SambalConfig} from "./types";
 import {parseDataYmlFile} from "./validate";
@@ -55,7 +56,7 @@ program
     .parse(process.argv);
 
 if (program.generate) {
-    generate(
+    const generator = new CodeGenerator(
         DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
         DEFAULT_OPTIONS.sharedCssFolder,
@@ -63,6 +64,7 @@ if (program.generate) {
         DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder
     );
+    generator.generate();
 } else if (program.collect) {
     del.sync([`${DEFAULT_OPTIONS.dataFolder}`]);
     const content = fs.readFileSync(`${DEFAULT_OPTIONS.configFolder}/data.yml`, 'utf8');
@@ -88,6 +90,7 @@ if (program.generate) {
 }
 
 async function startWatch() {
+    /*
     await generate(
         DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
@@ -104,5 +107,5 @@ async function startWatch() {
         DEFAULT_OPTIONS.actionFolder,
         DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder
-    );
+    );*/
 }

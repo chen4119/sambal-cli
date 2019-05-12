@@ -1,10 +1,17 @@
+import {COMPONENT_CONFIG, FUNCTION_ON_STATE_CHANGED} from './constants';
+
 const COMPONENT_IMPORTS = `
-import {LitElement, html} from '@polymer/lit-element';
+import {LitElement, html, css} from '@polymer/lit-element';
 import {repeat} from 'lit-html/directives/repeat';
 import {ifDefined} from 'lit-html/directives/if-defined';
 import {guard} from 'lit-html/directives/guard';
 import {until} from 'lit-html/directives/until.js';
-import {store} from 'sambal';
+`;
+
+const DYNAMIC_IMPORTS = `
+<% _.forEach(imports, function(imp) { %>
+import <%=imp.name%> from '<%=imp.path%>';
+<% }); %>
 `;
 
 const COMPONENT_IMPORT_STYLE_SHEETS = `
@@ -41,26 +48,29 @@ store.addReducers({
 `;
 
 const COMPONENT_PROPERTIES = `
-static get properties() {
-    return {
-        <% _.forEach(attributes, function(attr) { %>
-        <%-attr.name%>: {type: <%=attr.type%>},
-        <% }); %>
+<% if (properties.length > 0) { %>
+    static get properties() {
+        return ${COMPONENT_CONFIG}.properties;
     }
-}
+<% } %>
+`;
+
+const COMPONENT_CSS = `
+<% if (css) { %>
+    static get styles() {
+        return css\`<%=css%>\`;
+    }
+<% } %>
 `;
 
 const COMPONENT_RENDER = `
 render() {
-    <% _.forEach(properties, function(prop) { %>
-    const <%-prop.name%> = this.<%=prop.name%>;
-    <% }); %>
-    return html\`
-    <% _.forEach(includeStyleSheets, function(styleSheet) { %>
-    \${<%=styleSheet.name%>}
-    <% }); %>
-    <%=template%>
-    \`;
+    <% if (properties.length > 0) { %>
+        <% _.forEach(properties, function(propName) { %>
+            const <%-propName%> = this[<%=propName%>];
+        <% }); %>
+    <% } %>
+    return html\`<%=template%>\`;
 }
 `;
 
@@ -80,15 +90,13 @@ stateChanged(state) {
 
 export const SIMPLE_COMPONENT: string = `
 ${COMPONENT_IMPORTS}
-${COMPONENT_IMPORT_ACTIONS_SELECTORS}
-${COMPONENT_IMPORT_STYLE_SHEETS}
-${COMPONENT_LOAD_REDUCERS}
+${DYNAMIC_IMPORTS}
 
 class <%=componentName%> extends LitElement {
     constructor() {
         super();
-        ${COMPONENT_INIT_PROPERTIES}
     }
+    ${COMPONENT_CSS}
     ${COMPONENT_PROPERTIES}
     ${COMPONENT_RENDER}
 }
@@ -98,17 +106,19 @@ ${COMPONENT_CUSTOM_ELEMENTS}
 export const REDUX_COMPONENT: string = `
 ${COMPONENT_IMPORTS}
 import {connect} from 'pwa-helpers/connect-mixin.js';
-${COMPONENT_IMPORT_ACTIONS_SELECTORS}
-${COMPONENT_IMPORT_STYLE_SHEETS}
-${COMPONENT_LOAD_REDUCERS}
+${DYNAMIC_IMPORTS}
 
 class <%=componentName%> extends connect(store)(LitElement) {
     constructor() {
         super();
-        ${COMPONENT_INIT_PROPERTIES}
     }
+
+    stateChanged(state) {
+        ${FUNCTION_ON_STATE_CHANGED}(this, state);
+    }
+
+    ${COMPONENT_CSS}
     ${COMPONENT_PROPERTIES}
-    ${STATE_CHANGE_HANDLER}
     ${COMPONENT_RENDER}
 }
 ${COMPONENT_CUSTOM_ELEMENTS}
@@ -126,6 +136,7 @@ ${COMPONENT_IMPORT_STYLE_SHEETS}
 ${COMPONENT_IMPORT_INCLUDES}
 ${COMPONENT_LOAD_REDUCERS}
 
+const site = <%=site%>;
 const ROUTES = [
 <% _.forEach(routes, function(route) { %>
 {
@@ -200,7 +211,7 @@ class App extends connect(store)(LitElement) {
             store.dispatch(updateLocation(goToPath));
             this.loadLazyResources();
         });
-        installMediaQueryWatcher('(max-width: <%=site.smallScreenSize%>px)', (matches) => store.dispatch(updateScreenSize(matches)));
+        installMediaQueryWatcher('(max-width: <%=smallScreenSize%>px)', (matches) => store.dispatch(updateScreenSize(matches)));
 
         // Custom elements polyfill safe way to indicate an element has been upgraded.
         this.removeAttribute('unresolved');
@@ -221,10 +232,7 @@ ${COMPONENT_IMPORT_INCLUDES}
 `;
 
 export const STYLESHEET: string = `
-import {html} from '@polymer/lit-element';
+import {css} from '@polymer/lit-element';
 
-export const <%=styleSheetName%> = html\`
-<style>
-    <%=css%>
-<style>\`;
+export const <%=styleSheetName%> = css\`<%=css%>\`;
 `;

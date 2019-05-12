@@ -1,7 +1,3 @@
----
-includeStyleSheets: 
-    - shared
----
 
 # __SUMMARY:__
 

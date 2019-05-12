@@ -30,7 +30,8 @@
         "serve": "polymer serve --port 8081",
         "serve:static": "polymer serve --port 5000 build/esm-bundled",
         "watch": "./bin/sambal -w",
-        "polymer": "polymer build"
+        "polymer": "polymer build",
+        "ast": "ts-node ./src/index.ts -g"
     },
     "dependencies": {
         "@babel/core": "7.1.5",
@@ -46,6 +47,7 @@
         "gray-matter": "4.0.1",
         "sambal": "0.0.6",
         "sambal-fs": "0.0.4",
+        "lit-element": "2.1.0",
         "browser-sync": "2.26.3",
         "rollup": "0.67.0",
         "rollup-plugin-babel": "4.0.3",

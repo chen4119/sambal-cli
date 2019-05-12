@@ -15,7 +15,7 @@ export function getPropertyValue(type: string, value: any) {
 }
 
 export function asyncReadFile(inputPath: string) {
-    return new Promise(function(resolve, reject) {
+    return new Promise<string>(function(resolve, reject) {
         fs.readFile(inputPath, 'utf8', function(err, contents) {
             if (err) {
                 reject(err);
@@ -42,3 +42,4 @@ export function asyncWriteFile(outputPath: string, content: string | Object) {
         });
     });
 }
+
