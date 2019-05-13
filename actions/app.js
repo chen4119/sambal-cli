@@ -1,6 +1,9 @@
 import * as marked from 'marked';
 import {SambalReader} from 'sambal-fs/dist/SambalReader';
 export const GET_BLOG_POST = 'GET_BLOG_POST';
+export const UPDATE_LOCATION = 'UPDATE_LOCATION';
+export const UPDATE_SCREEN_SIZE = 'UPDATE_SCREEN_SIZE';
+export const RECEIVE_LAZY_RESOURCES = 'RECEIVE_LAZY_RESOURCES';
 
 const BLOG_TYPE = {
     name: "blog",
@@ -24,6 +27,27 @@ const BLOGS_BY_AUTHOR = {
     partitionBy: ["tags", "author"]
 };
 
+export const updateLocation = (path) => (dispatch, getState) => {
+    dispatch({
+        type: UPDATE_LOCATION,
+        route: path
+    });
+};
+
+export const updateScreenSize = (isSmallScreen) => (dispatch, getState) => {
+    dispatch({
+        type: UPDATE_SCREEN_SIZE,
+        isSmallScreen
+    });
+};
+
+export const receivedLazyResources = () => (dispatch, getState) => {
+    dispatch({
+        type: RECEIVE_LAZY_RESOURCES
+    });
+};
+
+/*
 const reader = new SambalReader({
     types: [BLOG_TYPE], 
     collections: [ALL_BLOGS_COLLECTION, BLOGS_BY_AUTHOR]
@@ -47,4 +71,4 @@ export const fetchBlog = () => async (dispatch) => {
         type: GET_BLOG_POST,
         content: html
     });
-};
+};*/

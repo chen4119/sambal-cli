@@ -1,7 +1,6 @@
-import { readFileSync } from "fs";
 import * as ts from "typescript";
 import _ from "lodash";
-import {COMPONENT_CONFIG, FUNCTION_ON_STATE_CHANGED, FUNCTION_INIT_COMPONENT} from './constants';
+import {COMPONENT_CONFIG, FUNCTION_ON_STATE_CHANGED, FUNCTION_INIT_COMPONENT, FUNCTION_SHOULD_UPDATE, FUNCTION_UPDATED, FUNCTION_FIRST_UPDATED} from './constants';
 const TYPE_IDENTIFIER = "identifier";
 const TYPE_FUNCTION = "function";
 const TYPE_VARIABLE = "variable";
@@ -41,11 +40,6 @@ export function getExportVariables(fileContent: string) {
         // console.log(result);
         findAllExportedVariables(result, exports);
     }
-    /*
-    const defaultExport = exports.find((e) => e.isDefault); // should only have one
-    const nonDefaultExports = exports.filter((e) => !e.isDefault);
-    return `${defaultExport ? defaultExport : ''}${nonDefaultExports.length > 0 ? `, ${nonDefaultExports.join(', ')}` : ''}`;
-    */
    return exports;
 }
 
@@ -90,13 +84,19 @@ export function parseComponentJs(fileContent: string) {
 function parseComponentJsExport(exportName: string, node: ts.Node, exports: any) {
     switch (exportName) {
         case FUNCTION_ON_STATE_CHANGED:
-            exports[FUNCTION_ON_STATE_CHANGED] = getAllStateAccessor(node);
+            exports[exportName] = getAllStateAccessor(node);
             break;
         case FUNCTION_INIT_COMPONENT:
-            exports[FUNCTION_INIT_COMPONENT] = getAllComponentProperties(node);
+            exports[exportName] = getAllComponentProperties(node);
             break;
         case COMPONENT_CONFIG:
-            exports[COMPONENT_CONFIG] = parseComponentConfig(node);
+            exports[exportName] = parseComponentConfig(node);
+            break;
+        case FUNCTION_SHOULD_UPDATE:
+        case FUNCTION_UPDATED:
+        case FUNCTION_FIRST_UPDATED:
+            exports[exportName] = true;
+            break;
         default:
             break;
     }
@@ -215,14 +215,6 @@ function recursivelyVisitChild(node: ts.Node, visit: Function) {
     });
 }
 
-/*
-function parseSourceFile(root: ts.SourceFile) {
-    for (let i = 0; i < root.statements.length; i++) {
-        const result = parseNode(root.statements[i]);
-        console.log(result);
-    }
-}*/
-
 function parseNode(node: ts.Node) {
     switch (node.kind) {
         case ts.SyntaxKind.ExportAssignment:
@@ -239,14 +231,14 @@ function parseNode(node: ts.Node) {
             return {type: TYPE_STRING_LITERAL, name: (node as ts.StringLiteral).text};
         case ts.SyntaxKind.ExpressionStatement:
             return parseNode((node as ts.ExpressionStatement).expression);
-        case ts.SyntaxKind.TemplateExpression:
-            return parseTemplate(node as ts.TemplateExpression);
+        // case ts.SyntaxKind.TemplateExpression:
+        //     return parseTemplate(node as ts.TemplateExpression);
         case ts.SyntaxKind.PropertyAccessExpression:
             return parsePropertyAccessExpression(node as ts.PropertyAccessExpression);
         case ts.SyntaxKind.CallExpression:
             return parseCallExpression(node as ts.CallExpression);
-        case ts.SyntaxKind.TaggedTemplateExpression:
-            return parseNode((node as ts.TaggedTemplateExpression).template);
+        // case ts.SyntaxKind.TaggedTemplateExpression:
+        //    return parseNode((node as ts.TaggedTemplateExpression).template);
         case ts.SyntaxKind.ObjectLiteralExpression:
             return parseObjectLiteral(node as ts.ObjectLiteralExpression);
         case ts.SyntaxKind.ArrayLiteralExpression:
@@ -300,11 +292,6 @@ function parseCallExpression(node: ts.CallExpression) {
 }
 
 function parseFunction(node: ts.FunctionExpression | ts.ArrowFunction | ts.FunctionDeclaration) {
-    /*
-    ts.forEachChild(node.body, (node: ts.Node) => {
-        console.log('visiting');
-        console.log(node.kind);
-    });*/
     return {
         type: TYPE_FUNCTION,
         isExported: isExported(node),
@@ -313,6 +300,7 @@ function parseFunction(node: ts.FunctionExpression | ts.ArrowFunction | ts.Funct
     };
 }
 
+/*
 function parseTemplate(node: ts.TemplateExpression) {
     let templateVariables = [];
     for (let i = 0; i < node.templateSpans.length; i++) {
@@ -326,17 +314,9 @@ function parseTemplate(node: ts.TemplateExpression) {
         }
     }
     return templateVariables;
-}
+}*/
 
 function parseVariableStatement(node: ts.VariableStatement) {
-    /*
-    const variables = [];
-    const isExport = isExported(node);
-    for (let i = 0; i < node.declarationList.declarations.length; i ++) {
-        const declaration = parseNode(node.declarationList.declarations[i]);
-        declaration.isExported = isExport;
-        variables.push(declaration);
-    }*/
     return {
         isExported: isExported(node),
         variables: node.declarationList.declarations.map((v: ts.VariableDeclaration) => ({
@@ -372,16 +352,3 @@ function isExported(node: ts.Node) {
     }
     return false;
 }
-
-/*
-const sourceFile = ts.createSourceFile(
-    './actions/app.js',
-    readFileSync('./actions/app.js').toString(),
-    ts.ScriptTarget.Latest,
-    true
-);
-
-// console.log(ts.SyntaxKind.SourceFile);
-parseSourceFile(sourceFile);
-// console.log(sourceFile);
-*/

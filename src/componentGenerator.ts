@@ -1,13 +1,11 @@
 import path from 'path';
-
-import matter from 'gray-matter';
 import marked from "marked";
 import fs from "fs";
-import * as ts from "typescript";
+import prettier from 'prettier';
 import _ from "lodash";
 import {getTemplateVariables, parseComponentJs} from './ast';
 import {getComponentNameFromTagName, asyncReadFile} from './utils';
-import {COMPONENT_CONFIG} from './constants';
+import {COMPONENT_CONFIG, FUNCTION_ON_STATE_CHANGED, FUNCTION_INIT_COMPONENT, FUNCTION_SHOULD_UPDATE, FUNCTION_FIRST_UPDATED, FUNCTION_UPDATED} from './constants';
 
 _.templateSettings.interpolate = /<%=([\s\S]+?)%>/g;
 import {SIMPLE_COMPONENT, REDUX_COMPONENT} from './templates';
@@ -46,35 +44,32 @@ export default class ComponentGenerator {
         }
 
         const templateRefs = getTemplateVariables(html);
-        const componentConfig = componentJs ? componentJs.componentConfig : null;
+        let template = SIMPLE_COMPONENT_TEMPLATE;
+        let componentConfig = null;
+        if (componentJs) {
+            componentConfig = componentJs[COMPONENT_CONFIG];
+            if (componentJs[FUNCTION_ON_STATE_CHANGED]) {
+                template = REDUX_COMPONENT_TEMPLATE;
+            }
+        }
+
         // console.log(this.getImports(componentPath, componentJs, templateRefs));
         let component = '';
-        component = SIMPLE_COMPONENT_TEMPLATE({
+        component = template({
             imports: this.getImports(componentPath, componentJs, templateRefs),
             tagName: this.tagName,
             componentName: componentName,
             properties: componentConfig ? componentConfig.properties : [],
             sharedCss: componentConfig ? componentConfig.includeCss : [],
+            isInitComponent: componentJs ? Boolean(componentJs[FUNCTION_INIT_COMPONENT]) : false,
+            hasShouldUpdate: componentJs ? Boolean(componentJs[FUNCTION_SHOULD_UPDATE]) : false,
+            hasFirstUpdated: componentJs ? Boolean(componentJs[FUNCTION_FIRST_UPDATED]) : false,
+            hasUpdated: componentJs ? Boolean(componentJs[FUNCTION_UPDATED]) : false,
             css: componentCss,
             template: html
         });
 
-        console.log(component);
-        /*
-        const styleSheet = this.css ? `<style>${this.css}</style>` : "";
-        const template = styleSheet + html;
-        let component = '';
-        component = SIMPLE_COMPONENT_TEMPLATE({
-            tagName: tagName,
-            includeStyleSheets: this.parseIncludeStyleSheets(frontMatter.data, componentPath),
-            componentName: componentName,
-            properties: properties,
-            attributes: attributes,
-            reducers: [],
-            actionsAndSelectors: [],
-            template: template
-        });
-        this.parseAst(componentName, html);*/
+        console.log(prettier.format(component, {parser: "babel"}));
     }
 
     async getComponentCss() {
@@ -104,12 +99,27 @@ export default class ComponentGenerator {
                     path: `./${this.tagName}.js`
                 });
             }
-            if (componentJs.componentConfig) {
-                this.resolveSharedStyleSheetImports(componentPath, componentJs.componentConfig, imports);
+            if (componentJs[COMPONENT_CONFIG]) {
+                this.resolveSharedStyleSheetImports(componentPath, componentJs[COMPONENT_CONFIG], imports);
             }
         }
-
+        this.resolveActionImports(componentPath, templateRefs, imports);
         return imports;
+    }
+
+    resolveActionImports(componentPath: string, templateRefs: string[], imports) {
+        for (const actionFileName of this.actionMap.keys()) {
+            const actionFile = this.actionMap.get(actionFileName);
+            const actionExports = actionFile.exports.map((e) => e.name);
+            const intersections = _.intersection(templateRefs, actionExports);
+            const relativePath = this.getRelativePath(componentPath, actionFile.path);
+            if (intersections.length > 0) {
+                imports.push({
+                    name: `{${intersections.join(', ')}}`,
+                    path: relativePath
+                });
+            }
+        }
     }
 
     resolveSharedStyleSheetImports(componentPath: string, componentConfig, imports) {
