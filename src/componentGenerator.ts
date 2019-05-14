@@ -3,7 +3,7 @@ import marked from "marked";
 import fs from "fs";
 import prettier from 'prettier';
 import _ from "lodash";
-import {getTemplateVariables, parseComponentJs} from './ast';
+import {getTemplateVariables} from './ast';
 import {getComponentNameFromTagName, asyncReadFile} from './utils';
 import {COMPONENT_CONFIG, FUNCTION_ON_STATE_CHANGED, FUNCTION_INIT_COMPONENT, FUNCTION_SHOULD_UPDATE, FUNCTION_FIRST_UPDATED, FUNCTION_UPDATED} from './constants';
 
@@ -18,8 +18,10 @@ export default class ComponentGenerator {
     sharedStyleSheetMap: Map<string, any>;
     actionMap: Map<string, any>;
     reducerMap: Map<string, any>;
-    constructor(file: any, sharedStyleSheetMap, actionMap, reducerMap) {
+    componentExports: any;
+    constructor(file: any, componentExports, sharedStyleSheetMap, actionMap, reducerMap) {
         this.file = file;
+        this.componentExports = componentExports;
         this.sharedStyleSheetMap = sharedStyleSheetMap;
         this.actionMap = actionMap;
         this.reducerMap = reducerMap;
@@ -27,13 +29,7 @@ export default class ComponentGenerator {
     }
 
     async generate() {
-        // const tagName = path.basename(this.file.basename, this.file.extname);
-        const results = await Promise.all<string, any>([
-            this.getComponentCss(),
-            this.getComponentJs()
-        ]);
-        const componentCss = results[0];
-        const componentJs = results[1];
+        const componentCss = await this.getComponentCss();
         const relativePath = path.relative(this.file.base, this.file.dirname);
         const componentName = getComponentNameFromTagName(this.tagName);
         const componentPath = (relativePath !== '') ? `./components/${relativePath}` : `./components`;
@@ -46,30 +42,29 @@ export default class ComponentGenerator {
         const templateRefs = getTemplateVariables(html);
         let template = SIMPLE_COMPONENT_TEMPLATE;
         let componentConfig = null;
-        if (componentJs) {
-            componentConfig = componentJs[COMPONENT_CONFIG];
-            if (componentJs[FUNCTION_ON_STATE_CHANGED]) {
+        if (this.componentExports) {
+            componentConfig = this.componentExports[COMPONENT_CONFIG];
+            if (this.componentExports[FUNCTION_ON_STATE_CHANGED]) {
                 template = REDUX_COMPONENT_TEMPLATE;
             }
         }
 
-        // console.log(this.getImports(componentPath, componentJs, templateRefs));
         let component = '';
         component = template({
-            imports: this.getImports(componentPath, componentJs, templateRefs),
+            imports: this.getImports(componentPath, templateRefs),
             tagName: this.tagName,
             componentName: componentName,
             properties: componentConfig ? componentConfig.properties : [],
             sharedCss: componentConfig ? componentConfig.includeCss : [],
-            isInitComponent: componentJs ? Boolean(componentJs[FUNCTION_INIT_COMPONENT]) : false,
-            hasShouldUpdate: componentJs ? Boolean(componentJs[FUNCTION_SHOULD_UPDATE]) : false,
-            hasFirstUpdated: componentJs ? Boolean(componentJs[FUNCTION_FIRST_UPDATED]) : false,
-            hasUpdated: componentJs ? Boolean(componentJs[FUNCTION_UPDATED]) : false,
+            isInitComponent: this.componentExports ? Boolean(this.componentExports[FUNCTION_INIT_COMPONENT]) : false,
+            hasShouldUpdate: this.componentExports ? Boolean(this.componentExports[FUNCTION_SHOULD_UPDATE]) : false,
+            hasFirstUpdated: this.componentExports ? Boolean(this.componentExports[FUNCTION_FIRST_UPDATED]) : false,
+            hasUpdated: this.componentExports ? Boolean(this.componentExports[FUNCTION_UPDATED]) : false,
             css: componentCss,
             template: html
         });
 
-        console.log(prettier.format(component, {parser: "babel"}));
+        return prettier.format(component, {parser: "babel"});
     }
 
     async getComponentCss() {
@@ -80,27 +75,28 @@ export default class ComponentGenerator {
         return null;
     }
 
+    /*
     async getComponentJs() {
-        const jsFile = `${this.file.dirname}/${this.tagName}.js`;
+        const jsFile = `${this.file.dirname}/${this.tagName}.export.js`;
         if (fs.existsSync(jsFile)) {
             const content = await asyncReadFile(jsFile);
             return parseComponentJs(content);
         }
         return null;
-    }
+    }*/
 
-    getImports(componentPath: string, componentJs: any, templateRefs: string[]) {
+    getImports(componentPath: string, templateRefs: string[]) {
         const imports = [];
-        if (componentJs) {
-            const exports = Object.keys(componentJs);
+        if (this.componentExports) {
+            const exports = Object.keys(this.componentExports);
             if (exports.length > 0) {
                 imports.push({
                     name: `{${exports.join(', ')}}`,
-                    path: `./${this.tagName}.js`
+                    path: `./${this.tagName}.export.js`
                 });
             }
-            if (componentJs[COMPONENT_CONFIG]) {
-                this.resolveSharedStyleSheetImports(componentPath, componentJs[COMPONENT_CONFIG], imports);
+            if (this.componentExports[COMPONENT_CONFIG]) {
+                this.resolveSharedStyleSheetImports(componentPath, this.componentExports[COMPONENT_CONFIG], imports);
             }
         }
         this.resolveActionImports(componentPath, templateRefs, imports);

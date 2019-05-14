@@ -1,19 +1,6 @@
 <sambal-header></sambal-header>
 <main role="main" class="main-content">
-    <switch-route path="/">
-        <about-me></about-me>
-    </switch-route>
-    <switch-route path="/about" @active="${() => {
-        console.log('fetching');
-        store.dispatch(fetchBlog());
-    }}">
-        <about-me></about-me>
-    </switch-route>
-    <switch-route path="/resume">
-        <my-resume></my-resume>
-    </switch-route>
-    <switch-route path="/404">
-        <not-found></not-found>
-    </switch-route>
+    <about-me ?active="${page === '/'}"></about-me>
+    <my-resume ?active="${page === '/resume'}"></my-resume>
 </main>
 <sambal-footer></sambal-footer>

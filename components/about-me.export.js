@@ -3,7 +3,8 @@
 export const componentConfig = {
     includeCss: ['shared'],
     properties: {
-        content: {type: Object}
+        content: {type: Object},
+        active: {type: Boolean}
     }
 };
 

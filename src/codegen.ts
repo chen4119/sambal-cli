@@ -14,7 +14,7 @@ import {
     asyncReadFile
 } from './utils';
 import {STYLESHEET} from './templates';
-import {getExportVariables} from "./ast";
+import {getExportVariables, parseComponentJs} from "./ast";
 import ComponentGenerator from "./componentGenerator";
 
 _.templateSettings.interpolate = /<%=([\s\S]+?)%>/g;
@@ -28,9 +28,8 @@ export default class CodeGenerator {
     reducerFolder: string;
     jsFolder: string;
     // routes: UserDefinedRoute[] = [];
-    // styleSheetMap: Map<string, any> = new Map<string, any>();
     sharedStyleSheetMap: Map<string, any> = new Map<string, any>();
-    componentMap: Map<string, any> = new Map<string, any>();
+    componentExportMap: Map<string, any> = new Map<string, any>();
     actionMap: Map<string, any> = new Map<string, any>();
     reducerMap: Map<string, any> = new Map<string, any>();
     constructor(configFolder: string, componentFolder: string, sharedCssFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
@@ -54,12 +53,15 @@ export default class CodeGenerator {
         const iterateReducersTask = () => this.iterateActionsReducers(`${this.reducerFolder}/**/*`, 'reducers', `${this.jsFolder}/reducers`, this.reducerMap);
 
         const buildDependencies = gulpParallel(
+            this.copyFiles.bind(this),
             this.generateSharedCss.bind(this),
+            this.iterateComponentExportJs.bind(this),
             iterateActionsTask,
             iterateReducersTask
         );
         
         const build = gulpSeries(
+            this.clean.bind(this),
             buildDependencies,
             this.generateComponents.bind(this)
         );
@@ -73,6 +75,17 @@ export default class CodeGenerator {
                 resolve();
             });
         });
+    }
+
+    clean(cb) {
+        del.sync([
+            `${this.jsFolder}/**/*`
+        ]);
+        cb();
+    }
+
+    copyFiles() {
+        return gulpSrc(['./store.js'], (file) => {}).pipe(gulpDest(this.jsFolder));
     }
 
     iterateActionsReducers(
@@ -94,18 +107,31 @@ export default class CodeGenerator {
                 exports: jsExports,
                 path: jsPath
             });
-        });
-        // .pipe(gulpDest(outputFolder));
+        })
+        .pipe(gulpDest(outputFolder));
+    }
+
+    iterateComponentExportJs() {
+        return gulpSrc(`${this.componentFolder}/**/*.export.js`, async (file) => {
+            const tagName = path.basename(file.basename, '.export.js');
+            const componentJs = parseComponentJs(file.contents.toString());
+            if (this.componentExportMap.has(tagName)) {
+                throw new Error(`Duplicate component export js filename ${tagName}`);
+            }
+            this.componentExportMap.set(tagName, componentJs);
+        })
+        .pipe(gulpDest(`${this.jsFolder}/components`));
     }
 
     generateComponents() {
         return gulpSrc([`${this.componentFolder}/**/*.html`, `${this.componentFolder}/**/*.md`], async (file) => {
-            // console.log(file);
-            const generator = new ComponentGenerator(file, this.sharedStyleSheetMap, this.actionMap, this.reducerMap);
+            const tagName = path.basename(file.basename, file.extname);
+            const generator = new ComponentGenerator(file, this.componentExportMap.get(tagName), this.sharedStyleSheetMap, this.actionMap, this.reducerMap);
             const source = await generator.generate();
+            file.contents = new Buffer(source);
         })
-        // .pipe(gulpRename(".js"))
-        // .pipe(gulpDest(`${jsFolder}/components`));
+        .pipe(gulpRename(".js"))
+        .pipe(gulpDest(`${this.jsFolder}/components`));
     }
     
     transformSharedCss(file:any) {
@@ -128,8 +154,8 @@ export default class CodeGenerator {
     generateSharedCss() {
         return gulpSrc(`${this.sharedCssFolder}/**/*.css`, (file) => {
             this.transformSharedCss(file);
-        });
-        // .pipe(gulpRename(".js"))
-        // .pipe(gulpDest(`${jsFolder}/css`));
+        })
+        .pipe(gulpRename(".js"))
+        .pipe(gulpDest(`${this.jsFolder}/css`));
     }
 }
