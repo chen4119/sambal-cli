@@ -25,13 +25,13 @@
     },
     "scripts": {
         "start": "npm run serve & npm run watch",
-        "build": "rollup -c",
+        "build": "tsc",
         "generate": "./bin/sambal -g",
         "serve": "polymer serve --port 8081",
         "serve:static": "polymer serve --port 5000 build/esm-bundled",
         "watch": "./bin/sambal -w",
         "polymer": "polymer build",
-        "ast": "ts-node ./src/index.ts -g"
+        "ast": "ts-node ./src/build.ts"
     },
     "dependencies": {
         "@babel/core": "7.1.5",

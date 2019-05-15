@@ -5,7 +5,6 @@ import del from "delete";
 import yaml from "js-yaml";
 import {Schema, Collection, Type} from "sambal-fs";
 import {version} from "../package.json";
-// import {generate} from "./generator";
 import CodeGenerator from "./codegen";
 import {collect} from "./collector";
 import {SambalConfig} from "./types";

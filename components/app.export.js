@@ -13,6 +13,7 @@ export const componentConfig = {
     }
 };
 
+/*
 function loadLazyResources() {
     const lazyLoadComplete = store.getState().app.lazyResourcesLoaded;
     // load lazy resources after render
@@ -22,7 +23,7 @@ function loadLazyResources() {
             store.dispatch(receivedLazyResources());
         });
     }
-}
+}*/
 
 export function updated(component, changedProps) {
     /*
@@ -43,7 +44,7 @@ export function firstUpdated(component) {
     installRouter(async (location) => {
         const locationPath = decodeURIComponent(location.pathname);
         store.dispatch(updateLocation(locationPath));
-        loadLazyResources();
+        // loadLazyResources();
     });
     installMediaQueryWatcher('(max-width: <%=smallScreenSize%>px)', (matches) => store.dispatch(updateScreenSize(matches)));
 

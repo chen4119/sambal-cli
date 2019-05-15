@@ -1,21 +1,22 @@
 import {gulpSeries, gulpWatch} from './gulp';
 import browserSync from 'browser-sync';
-import {generate} from "./generator";
+// import {generate} from "./generator";
+import CodeGenerator from "./codegen";
 import {build} from "./build";
 
 export async function watch(configFolder: string, componentFolder: string, sharedCssFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
     const globs = [
         `${configFolder}/site.yml`,
-        `${configFolder}/routes.yml`,
-        `${configFolder}/eager.js`,
-        `${configFolder}/lazy.js`,
+        // `${configFolder}/routes.yml`,
+        // `${configFolder}/eager.js`,
+        // `${configFolder}/lazy.js`,
         `${componentFolder}/**/*`,
         `${sharedCssFolder}/**/*`,
         `${actionFolder}/**/*`,
-        `${reducerFolder}/**/*`,
-        './app.css',
-        './app.html',
-        './app.md'
+        `${reducerFolder}/**/*`
+        // './app.css',
+        // './app.html',
+        // './app.md'
     ];
     const instance = browserSync.create();
     instance.init({
@@ -26,7 +27,17 @@ export async function watch(configFolder: string, componentFolder: string, share
         proxy: "localhost:8081"
     });
 
-    const generateTask = () => generate(configFolder, componentFolder, sharedCssFolder, actionFolder, reducerFolder, jsFolder);
+    const generateTask = () => {
+        const generator = new CodeGenerator(
+            configFolder,
+            componentFolder,
+            sharedCssFolder,
+            actionFolder,
+            reducerFolder,
+            jsFolder
+        );
+        generator.generate();
+    };
     // const buildTask = () => build(`${jsFolder}/app.js`, output);
     const reloadTask = (cb) => {
         instance.reload();
