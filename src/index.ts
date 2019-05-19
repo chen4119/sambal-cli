@@ -11,7 +11,6 @@ import {SambalConfig} from "./types";
 import {parseDataYmlFile} from "./validate";
 import {build} from "./build";
 import {watch} from "./watch";
-import { types } from "util";
 
 const DEFAULT_OPTIONS: SambalConfig = {
     configFolder: "sambal",
@@ -55,15 +54,7 @@ program
     .parse(process.argv);
 
 if (program.generate) {
-    const generator = new CodeGenerator(
-        DEFAULT_OPTIONS.configFolder,
-        DEFAULT_OPTIONS.componentFolder,
-        DEFAULT_OPTIONS.sharedCssFolder,
-        DEFAULT_OPTIONS.actionFolder,
-        DEFAULT_OPTIONS.reducerFolder,
-        DEFAULT_OPTIONS.jsFolder
-    );
-    generator.generate();
+    generateCode();
 } else if (program.collect) {
     del.sync([`${DEFAULT_OPTIONS.dataFolder}`]);
     const content = fs.readFileSync(`${DEFAULT_OPTIONS.configFolder}/data.yml`, 'utf8');
@@ -88,9 +79,8 @@ if (program.generate) {
     }, 2000);
 }
 
-async function startWatch() {
-    /*
-    await generate(
+async function generateCode() {
+    const generator = new CodeGenerator(
         DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
         DEFAULT_OPTIONS.sharedCssFolder,
@@ -98,6 +88,11 @@ async function startWatch() {
         DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder
     );
+    await generator.generate();
+}
+
+async function startWatch() {
+    await generateCode();
     // await build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
     watch(
         DEFAULT_OPTIONS.configFolder,
@@ -106,5 +101,5 @@ async function startWatch() {
         DEFAULT_OPTIONS.actionFolder,
         DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder
-    );*/
+    );
 }

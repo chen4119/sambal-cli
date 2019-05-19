@@ -1,10 +1,9 @@
 import {gulpSeries, gulpWatch} from './gulp';
 import browserSync from 'browser-sync';
-// import {generate} from "./generator";
 import CodeGenerator from "./codegen";
 import {build} from "./build";
 
-export async function watch(configFolder: string, componentFolder: string, sharedCssFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
+export function watch(configFolder: string, componentFolder: string, sharedCssFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
     const globs = [
         `${configFolder}/site.yml`,
         // `${configFolder}/routes.yml`,
@@ -27,7 +26,7 @@ export async function watch(configFolder: string, componentFolder: string, share
         proxy: "localhost:8081"
     });
 
-    const generateTask = () => {
+    const generateTask = async () => {
         const generator = new CodeGenerator(
             configFolder,
             componentFolder,
@@ -36,7 +35,7 @@ export async function watch(configFolder: string, componentFolder: string, share
             reducerFolder,
             jsFolder
         );
-        generator.generate();
+        await generator.generate();
     };
     // const buildTask = () => build(`${jsFolder}/app.js`, output);
     const reloadTask = (cb) => {
