@@ -9,6 +9,7 @@ export const componentConfig = {
 };
 
 export function shouldUpdate(component) {
+    console.log('about me should update ' + component.active);
     return component.active;
 }
 

@@ -23,7 +23,7 @@ const INIT_COMPONENT = `
 const HAS_SHOULD_UPDATE = `
 <% if (hasShouldUpdate) { %>
     shouldUpdate(changedProperties) {
-        ${FUNCTION_SHOULD_UPDATE}(this, changedProperties);
+        return ${FUNCTION_SHOULD_UPDATE}(this, changedProperties);
     }
 <% } %>
 `
@@ -62,9 +62,16 @@ const COMPONENT_PROPERTIES = `
 `;
 
 const COMPONENT_CSS = `
-<% if (css) { %>
+<% if (componentCss || includeCss.length > 0) { %>
     static get styles() {
-        return css\`<%=css%>\`;
+        const styles = [
+        <% _.forEach(includeCss, function(css) { %>
+            <%=css%>,
+        <% }); %>];
+        <% if (componentCss) { %>
+            styles.push(css\`<%=componentCss%>\`);
+        <% } %>
+        return styles;
     }
 <% } %>
 `;
@@ -73,7 +80,7 @@ const COMPONENT_RENDER = `
 render() {
     <% if (properties.length > 0) { %>
         <% _.forEach(properties, function(propName) { %>
-            const <%-propName%> = this[<%=propName%>];
+            const <%-propName%> = this.<%=propName%>;
         <% }); %>
     <% } %>
     return html\`<%=template%>\`;

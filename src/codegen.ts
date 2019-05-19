@@ -32,6 +32,7 @@ export default class CodeGenerator {
     componentExportMap: Map<string, any> = new Map<string, any>();
     actionMap: Map<string, any> = new Map<string, any>();
     reducerMap: Map<string, any> = new Map<string, any>();
+    siteConfig: SambalSiteMeta = {smallScreenSize: 767};
     constructor(configFolder: string, componentFolder: string, sharedCssFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
         this.configFolder = configFolder;
         this.componentFolder = componentFolder;
@@ -46,7 +47,7 @@ export default class CodeGenerator {
         const siteContent = await asyncReadFile(sitePath);
         let site: SambalSiteMeta = yaml.safeLoad(siteContent.toString());
         if (!site) {
-            site = {smallScreenSize: 767};
+            this.siteConfig = site;
         }
 
         const iterateActionsTask = () => this.iterateActionsReducers(`${this.actionFolder}/**/*`, 'actions', `${this.jsFolder}/actions`, this.actionMap);
@@ -126,7 +127,13 @@ export default class CodeGenerator {
     generateComponents() {
         return gulpSrc([`${this.componentFolder}/**/*.html`, `${this.componentFolder}/**/*.md`], async (file) => {
             const tagName = path.basename(file.basename, file.extname);
-            const generator = new ComponentGenerator(file, this.componentExportMap.get(tagName), this.sharedStyleSheetMap, this.actionMap, this.reducerMap);
+            const generator = new ComponentGenerator(
+                file,
+                this.componentExportMap.get(tagName),
+                this.sharedStyleSheetMap,
+                this.actionMap,
+                this.reducerMap
+            );
             const source = await generator.generate();
             file.contents = new Buffer(source);
         })

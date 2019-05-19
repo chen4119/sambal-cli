@@ -4,6 +4,7 @@
     </app-toolbar>
 
     <nav class="toolbar-list">
-        ${nav.map((link) => html`<a ?selected="${path === link.path}" ${toy} href="${link.path}">${link.name}</a>`)}
+        ${html`<a ?selected="${path === '/'}" href="/">Home</a>`}
+        ${html`<a ?selected="${path === '/resume'}" href="/resume">Resume</a>`}
     </nav>
 </app-header>

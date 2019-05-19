@@ -28,6 +28,7 @@ const BLOGS_BY_AUTHOR = {
 };
 
 export const updateLocation = (path) => (dispatch, getState) => {
+    console.log('UPDATE LOCATION CALLED WITH: ' + path);
     dispatch({
         type: UPDATE_LOCATION,
         route: path

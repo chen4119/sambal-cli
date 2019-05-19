@@ -6,5 +6,6 @@ export const componentConfig = {
 };
 
 export function shouldUpdate(component) {
+    console.log('resume should update ' + component.active);
     return component.active;
 }

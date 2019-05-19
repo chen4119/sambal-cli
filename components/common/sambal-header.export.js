@@ -8,15 +8,11 @@ export const componentConfig = {
 };
 
 export function initComponent(component) {
-    component.path = '';
-}
-
-export function shouldUpdate(component) {
-    return component.active;
+    component.path = '/';
 }
 
 export function onStateChanged(component, state) {
-    if (component.path !== state.sambal.path) {
-        component.path = state.sambal.path;
+    if (component.path !== state.app.route) {
+        component.path = state.app.route;
     }
 }

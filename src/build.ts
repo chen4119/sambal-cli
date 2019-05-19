@@ -22,6 +22,7 @@ export async function build(input: string, output: string) {
     });
 }
 
+/*
 (async () => {
     await build(`./js/components/app.js`, './build/test.js');
-})();
+})();*/

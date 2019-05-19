@@ -41,17 +41,19 @@ export default class ComponentGenerator {
 
         const templateRefs = getTemplateVariables(html);
         let template = SIMPLE_COMPONENT_TEMPLATE;
+        let isReduxComponent = false;
         let componentConfig = null;
         if (this.componentExports) {
             componentConfig = this.componentExports[COMPONENT_CONFIG];
             if (this.componentExports[FUNCTION_ON_STATE_CHANGED]) {
                 template = REDUX_COMPONENT_TEMPLATE;
+                isReduxComponent = true;
             }
         }
 
         let component = '';
         component = template({
-            imports: this.getImports(componentPath, templateRefs),
+            imports: this.getImports(componentPath, templateRefs, isReduxComponent),
             tagName: this.tagName,
             componentName: componentName,
             properties: componentConfig ? componentConfig.properties : [],
@@ -60,7 +62,8 @@ export default class ComponentGenerator {
             hasShouldUpdate: this.componentExports ? Boolean(this.componentExports[FUNCTION_SHOULD_UPDATE]) : false,
             hasFirstUpdated: this.componentExports ? Boolean(this.componentExports[FUNCTION_FIRST_UPDATED]) : false,
             hasUpdated: this.componentExports ? Boolean(this.componentExports[FUNCTION_UPDATED]) : false,
-            css: componentCss,
+            componentCss: componentCss,
+            includeCss: componentConfig ? componentConfig.includeCss : [],
             template: html
         });
 
@@ -85,8 +88,15 @@ export default class ComponentGenerator {
         return null;
     }*/
 
-    getImports(componentPath: string, templateRefs: string[]) {
+    getImports(componentPath: string, templateRefs: string[], isReduxComponent: boolean) {
         const imports = [];
+        if (isReduxComponent) {
+            const relativePath = this.getRelativePath(componentPath, './store.js');
+            imports.push({
+                name: `store`,
+                path: relativePath
+            });
+        }
         if (this.componentExports) {
             const exports = Object.keys(this.componentExports);
             if (exports.length > 0) {

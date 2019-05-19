@@ -4,7 +4,7 @@ import '@polymer/app-layout/app-toolbar/app-toolbar.js';
 import {installRouter} from 'pwa-helpers/router.js';
 import {installMediaQueryWatcher} from 'pwa-helpers/media-query.js';
 import {updateMetadata} from 'pwa-helpers/metadata.js';
-import {store} from '../store';
+import store from '../store';
 import {updateLocation, updateScreenSize, receivedLazyResources} from '../actions/app';
 
 export const componentConfig = {
@@ -13,17 +13,29 @@ export const componentConfig = {
     }
 };
 
-/*
+export function initComponent(component) {
+    component.path = '/';
+}
+
 function loadLazyResources() {
     const lazyLoadComplete = store.getState().app.lazyResourcesLoaded;
     // load lazy resources after render
     if (!lazyLoadComplete) {
         requestAnimationFrame(async () => {
-            await import('./lazyResources.js');
+            await import('./common/sambal-footer.js');
+            await import('./common/sambal-header.js');
+            await import('./about-me.js');
+            await import('./my-resume.js');
             store.dispatch(receivedLazyResources());
         });
     }
-}*/
+}
+
+export function onStateChanged(component, state) {
+    if (component.path !== state.app.route) {
+        component.path = state.app.route;
+    }
+}
 
 export function updated(component, changedProps) {
     /*
@@ -43,8 +55,9 @@ export function updated(component, changedProps) {
 export function firstUpdated(component) {
     installRouter(async (location) => {
         const locationPath = decodeURIComponent(location.pathname);
+        console.log('location: ' + locationPath);
         store.dispatch(updateLocation(locationPath));
-        // loadLazyResources();
+        loadLazyResources();
     });
     installMediaQueryWatcher('(max-width: <%=smallScreenSize%>px)', (matches) => store.dispatch(updateScreenSize(matches)));
 

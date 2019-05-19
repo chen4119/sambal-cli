@@ -1,6 +1,6 @@
 {
     "entrypoint": "index.html",
-    "shell": "js/components/app.js",
+    "shell": "js/components/sambal-app.js",
     "sources": [
         "js/**/*"
     ],

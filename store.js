@@ -8,7 +8,7 @@ import thunk from 'redux-thunk';
 import { lazyReducerEnhancer } from 'pwa-helpers/lazy-reducer-enhancer.js';
 import app from './reducers/app';
 
-export const store = createStore(
+const store = createStore(
     (state, action) => state,
     compose(lazyReducerEnhancer(combineReducers), applyMiddleware(thunk))
 );
@@ -16,3 +16,5 @@ export const store = createStore(
 store.addReducers({
     app
 });
+
+export default store;
