@@ -1,7 +1,7 @@
 import {gulpSeries, gulpWatch} from './gulp';
 import browserSync from 'browser-sync';
 import CodeGenerator from "./codegen";
-import {build} from "./build";
+// import {build} from "./build";
 
 export function watch(configFolder: string, componentFolder: string, sharedCssFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
     const globs = [

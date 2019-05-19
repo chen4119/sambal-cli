@@ -9,7 +9,7 @@ import CodeGenerator from "./codegen";
 import {collect} from "./collector";
 import {SambalConfig} from "./types";
 import {parseDataYmlFile} from "./validate";
-import {build} from "./build";
+// import {build} from "./build";
 import {watch} from "./watch";
 
 const DEFAULT_OPTIONS: SambalConfig = {
@@ -63,7 +63,7 @@ if (program.generate) {
     const schema: Schema = {types: data.types, collections: data.collections};
     collect(data.sources, schema, DEFAULT_OPTIONS.dataFolder);
 } else if (program.build) {
-    build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
+    // build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
 } else if (program.watch) {
     /*
     child_process.exec('node ./node_modules/polymer-cli/bin/polymer.js serve', (error, stdout, stderr) => {
