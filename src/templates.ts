@@ -2,10 +2,6 @@ import {COMPONENT_CONFIG, FUNCTION_ON_STATE_CHANGED, FUNCTION_INIT_COMPONENT, FU
 
 const COMPONENT_IMPORTS = `
 import {LitElement, html, css} from 'lit-element';
-import {repeat} from 'lit-html/directives/repeat';
-import {ifDefined} from 'lit-html/directives/if-defined';
-import {guard} from 'lit-html/directives/guard';
-import {until} from 'lit-html/directives/until.js';
 `;
 
 const DYNAMIC_IMPORTS = `

@@ -56,7 +56,9 @@ export default class ComponentGenerator {
             imports: this.getImports(componentPath, templateRefs, isReduxComponent),
             tagName: this.tagName,
             componentName: componentName,
-            properties: componentConfig ? componentConfig.properties : [],
+            properties: this.getPropertyList(
+                componentConfig ? componentConfig.properties : [], 
+                this.componentExports ? this.componentExports[FUNCTION_INIT_COMPONENT] : []),
             sharedCss: componentConfig ? componentConfig.includeCss : [],
             isInitComponent: this.componentExports ? Boolean(this.componentExports[FUNCTION_INIT_COMPONENT]) : false,
             hasShouldUpdate: this.componentExports ? Boolean(this.componentExports[FUNCTION_SHOULD_UPDATE]) : false,
@@ -78,15 +80,20 @@ export default class ComponentGenerator {
         return null;
     }
 
-    /*
-    async getComponentJs() {
-        const jsFile = `${this.file.dirname}/${this.tagName}.export.js`;
-        if (fs.existsSync(jsFile)) {
-            const content = await asyncReadFile(jsFile);
-            return parseComponentJs(content);
+    getPropertyList(componentProperties, initProperties) {
+        const uniqueProperties = new Set();
+        if (componentProperties) {
+            for (let i = 0; i < componentProperties.length; i++) {
+                uniqueProperties.add(componentProperties[i]);
+            }
         }
-        return null;
-    }*/
+        if (initProperties) {
+            for (let i = 0; i < initProperties.length; i++) {
+                uniqueProperties.add(initProperties[i]);
+            }
+        }
+        return [...uniqueProperties.values()];
+    }
 
     getImports(componentPath: string, templateRefs: string[], isReduxComponent: boolean) {
         const imports = [];

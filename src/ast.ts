@@ -1,6 +1,6 @@
 import * as ts from "typescript";
 import _ from "lodash";
-import {COMPONENT_CONFIG, FUNCTION_ON_STATE_CHANGED, FUNCTION_INIT_COMPONENT, FUNCTION_SHOULD_UPDATE, FUNCTION_UPDATED, FUNCTION_FIRST_UPDATED} from './constants';
+import {COMPONENT_CONFIG, FUNCTION_ON_STATE_CHANGED, FUNCTION_INIT_COMPONENT} from './constants';
 const TYPE_IDENTIFIER = "identifier";
 const TYPE_FUNCTION = "function";
 const TYPE_VARIABLE = "variable";
@@ -77,7 +77,6 @@ export function parseComponentJs(fileContent: string) {
             }
         }
     }
-    console.log(exports);
     return exports;
 }
 
@@ -92,12 +91,8 @@ function parseComponentJsExport(exportName: string, node: ts.Node, exports: any)
         case COMPONENT_CONFIG:
             exports[exportName] = parseComponentConfig(node);
             break;
-        case FUNCTION_SHOULD_UPDATE:
-        case FUNCTION_UPDATED:
-        case FUNCTION_FIRST_UPDATED:
-            exports[exportName] = true;
-            break;
         default:
+            exports[exportName] = true;
             break;
     }
 }
@@ -248,7 +243,7 @@ function parseNode(node: ts.Node) {
         case ts.SyntaxKind.BinaryExpression:
             return parseBinaryExpression(node as ts.BinaryExpression);
         default:
-            console.log('unknown kind ' + node.kind);
+            // console.log('unknown kind ' + node.kind);
             return null;
     }
 }

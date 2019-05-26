@@ -6,16 +6,11 @@ import CodeGenerator from "./codegen";
 export function watch(configFolder: string, componentFolder: string, sharedCssFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
     const globs = [
         `${configFolder}/site.yml`,
-        // `${configFolder}/routes.yml`,
-        // `${configFolder}/eager.js`,
-        // `${configFolder}/lazy.js`,
         `${componentFolder}/**/*`,
         `${sharedCssFolder}/**/*`,
         `${actionFolder}/**/*`,
-        `${reducerFolder}/**/*`
-        // './app.css',
-        // './app.html',
-        // './app.md'
+        `${reducerFolder}/**/*`,
+        './store.js'
     ];
     const instance = browserSync.create();
     instance.init({

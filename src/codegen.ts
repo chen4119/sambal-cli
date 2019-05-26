@@ -2,15 +2,10 @@ import path from 'path';
 import del from "delete";
 import _ from "lodash";
 import yaml from "js-yaml";
-import matter from 'gray-matter';
-import marked from "marked";
 
 import {gulpSeries, gulpParallel, gulpSrc, gulpRename, gulpDest} from './gulp';
-import {SambalSiteMeta, UserDefinedRoute, ROUTE_TYPE} from './types';
+import {SambalSiteMeta} from './types';
 import {
-    getComponentNameFromTagName,
-    getPropertyValue,
-    asyncWriteFile,
     asyncReadFile
 } from './utils';
 import {STYLESHEET} from './templates';
@@ -95,9 +90,7 @@ export default class CodeGenerator {
         outputFolder: string, 
         jsMap: Map<string, any>) {
         return gulpSrc(glob, (file) => {
-            console.log(file.path);
             const jsExports = getExportVariables(file.contents.toString());
-            console.log(jsExports);
             const fileName = path.basename(file.basename, '.js');
             const relativePath = path.relative(file.base, file.dirname);
             const jsPath = (relativePath !== '') ? `./${targetFolder}/${relativePath}/${file.basename}` : `./${targetFolder}/${file.basename}`;
