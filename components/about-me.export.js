@@ -8,13 +8,12 @@ export const componentConfig = {
     }
 };
 
-export function shouldUpdate(component) {
-    console.log('about me should update ' + component.active);
-    return component.active;
+export function shouldUpdate() {
+    return this.active;
 }
 
-export function onStateChanged(component, state) {
-    if (component.content !== state.app.blogPost) {
-        component.content = state.app.blogPost;
+export function onStateChanged(state) {
+    if (this.content !== state.app.blogPost) {
+        this.content = state.app.blogPost;
     }
 }

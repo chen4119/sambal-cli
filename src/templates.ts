@@ -12,14 +12,14 @@ import <%=imp.name%> from '<%=imp.path%>';
 
 const INIT_COMPONENT = `
 <% if (isInitComponent) { %>
-    ${FUNCTION_INIT_COMPONENT}(this);
+    ${FUNCTION_INIT_COMPONENT}.call(this);
 <% } %>
 `;
 
 const HAS_SHOULD_UPDATE = `
 <% if (hasShouldUpdate) { %>
     shouldUpdate(changedProperties) {
-        return ${FUNCTION_SHOULD_UPDATE}(this, changedProperties);
+        return ${FUNCTION_SHOULD_UPDATE}.call(this, changedProperties);
     }
 <% } %>
 `
@@ -27,7 +27,7 @@ const HAS_SHOULD_UPDATE = `
 const HAS_UPDATED = `
 <% if (hasUpdated) { %>
     updated(changedProperties) {
-        ${FUNCTION_UPDATED}(this, changedProperties);
+        ${FUNCTION_UPDATED}.call(this, changedProperties);
     }
 <% } %>
 `
@@ -35,7 +35,7 @@ const HAS_UPDATED = `
 const HAS_FIRST_UPDATED = `
 <% if (hasFirstUpdated) { %>
     firstUpdated(changedProperties) {
-        ${FUNCTION_FIRST_UPDATED}(this, changedProperties);
+        ${FUNCTION_FIRST_UPDATED}.call(this, changedProperties);
     }
 <% } %>
 `
@@ -73,14 +73,19 @@ const COMPONENT_CSS = `
 `;
 
 const COMPONENT_RENDER = `
-render() {
-    <% if (properties.length > 0) { %>
-        <% _.forEach(properties, function(propName) { %>
-            const <%-propName%> = this.<%=propName%>;
-        <% }); %>
-    <% } %>
-    return html\`<%=template%>\`;
-}
+<% if (properties.length > 0) { %>
+    renderHelper({<%= properties.join(', ') %>}) {
+        return html\`<%=template%>\`;
+    }
+    
+    render() {
+        return this.renderHelper(this);
+    }
+<% } else { %>
+    render() {
+        return html\`<%=template%>\`;
+    }
+<% }%>
 `;
 
 const COMPONENT_CUSTOM_ELEMENTS = `
@@ -118,7 +123,7 @@ class <%=componentName%> extends connect(store)(LitElement) {
     }
 
     stateChanged(state) {
-        ${FUNCTION_ON_STATE_CHANGED}(this, state);
+        ${FUNCTION_ON_STATE_CHANGED}.call(this, state);
     }
 
     ${COMPONENT_CSS}

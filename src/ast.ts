@@ -1,6 +1,6 @@
 import * as ts from "typescript";
 import _ from "lodash";
-import {COMPONENT_CONFIG, FUNCTION_ON_STATE_CHANGED, FUNCTION_INIT_COMPONENT} from './constants';
+import {COMPONENT_CONFIG, FUNCTION_INIT_COMPONENT} from './constants';
 const TYPE_IDENTIFIER = "identifier";
 const TYPE_FUNCTION = "function";
 const TYPE_VARIABLE = "variable";
@@ -82,9 +82,9 @@ export function parseComponentJs(fileContent: string) {
 
 function parseComponentJsExport(exportName: string, node: ts.Node, exports: any) {
     switch (exportName) {
-        case FUNCTION_ON_STATE_CHANGED:
-            exports[exportName] = getAllStateAccessor(node);
-            break;
+        // case FUNCTION_ON_STATE_CHANGED:
+        //    exports[exportName] = getAllStateAccessor(node);
+        //    break;
         case FUNCTION_INIT_COMPONENT:
             exports[exportName] = getAllComponentProperties(node);
             break;
@@ -102,7 +102,7 @@ function getAllComponentProperties(node: ts.Node) {
     recursivelyVisitChild(node, (child: ts.Node) => {
         if (child.kind === ts.SyntaxKind.BinaryExpression) {
             const binaryStmt = parseNode(child);
-            if (binaryStmt.left.type === ACTION_PROPERTY_ACCESS && binaryStmt.left.expression.name === 'component') {
+            if (binaryStmt.left.type === ACTION_PROPERTY_ACCESS && binaryStmt.left.expression.name === 'this') {
                 propSet.add(binaryStmt.left.name);
             }
         }
@@ -111,6 +111,7 @@ function getAllComponentProperties(node: ts.Node) {
     return [...propSet.values()];
 }
 
+/*
 function getAllStateAccessor(node: ts.Node) {
     const stateAccessSet = new Set();
     recursivelyVisitChild(node, (child: ts.Node) => {
@@ -123,7 +124,7 @@ function getAllStateAccessor(node: ts.Node) {
         return false;
     });
     return [...stateAccessSet.values()];
-}
+}*/
 
 function parseComponentConfig(node: ts.Node) {
     const config = {
@@ -221,7 +222,9 @@ function parseNode(node: ts.Node) {
         case ts.SyntaxKind.FunctionExpression:
             return parseFunction(node as any);
         case ts.SyntaxKind.Identifier:
-            return parseIdentifier(node as ts.Identifier);
+            return {type: TYPE_IDENTIFIER, name: (node as ts.Identifier).escapedText};
+        case ts.SyntaxKind.ThisKeyword:
+            return {type: TYPE_IDENTIFIER, name: "this"};
         case ts.SyntaxKind.StringLiteral:
             return {type: TYPE_STRING_LITERAL, name: (node as ts.StringLiteral).text};
         case ts.SyntaxKind.ExpressionStatement:
@@ -328,13 +331,6 @@ function parseBinaryExpression(node: ts.BinaryExpression) {
         operator: node.operatorToken,
         right: parseNode(node.right)
     }
-}
-
-function parseIdentifier(node: ts.Identifier) {
-    return {
-        type: TYPE_IDENTIFIER,
-        name: node.escapedText
-    };
 }
 
 function isExported(node: ts.Node) {

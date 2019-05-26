@@ -13,8 +13,8 @@ export const componentConfig = {
     }
 };
 
-export function initComponent(component) {
-    component.path = '/';
+export function initComponent() {
+    this.path = '/';
 }
 
 function loadLazyResources() {
@@ -31,13 +31,13 @@ function loadLazyResources() {
     }
 }
 
-export function onStateChanged(component, state) {
-    if (component.path !== state.app.route) {
-        component.path = state.app.route;
+export function onStateChanged(state) {
+    if (this.path !== state.app.route) {
+        this.path = state.app.route;
     }
 }
 
-export function updated(component, changedProps) {
+export function updated(changedProps) {
     /*
     if (changedProps.has('_path_')) {
         let route = null;
@@ -52,7 +52,7 @@ export function updated(component, changedProps) {
     }*/
 }
 
-export function firstUpdated(component) {
+export function firstUpdated() {
     installRouter(async (location) => {
         const locationPath = decodeURIComponent(location.pathname);
         console.log('location: ' + locationPath);
@@ -62,5 +62,5 @@ export function firstUpdated(component) {
     installMediaQueryWatcher('(max-width: <%=smallScreenSize%>px)', (matches) => store.dispatch(updateScreenSize(matches)));
 
     // Custom elements polyfill safe way to indicate an element has been upgraded.
-    component.removeAttribute('unresolved');
+    this.removeAttribute('unresolved');
 }

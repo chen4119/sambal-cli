@@ -7,12 +7,13 @@ export const componentConfig = {
     }
 };
 
-export function initComponent(component) {
-    component.path = '/';
+export function initComponent() {
+    this.path = '/';
+    this.testing = 'hello world';
 }
 
-export function onStateChanged(component, state) {
-    if (component.path !== state.app.route) {
-        component.path = state.app.route;
+export function onStateChanged(state) {
+    if (this.path !== state.app.route) {
+        this.path = state.app.route;
     }
 }

@@ -152,34 +152,6 @@ export default class ComponentGenerator {
         }
     }
 
-    /*
-    parseProperties(prop) {
-        const properties = [];
-        for (let i = 0; i < prop.properties.length; i++) {
-            const propName = prop.properties[i].name;
-            properties[propName] = this.getPropertyType(propName, prop.properties[i].initializer);
-        }
-        return properties;
-    }
-
-    getPropertyType(propName:string, initializer) {
-        if (initializer.type === TYPE_OBJECT_LITERAL) {
-            if (initializer.properties.length > 0 && initializer.properties[0].name === 'type') {
-                const propType = initializer.properties[0].initializer.name;
-                switch (propType) {
-                    case 'String':
-                        return {type: String};
-                    case 'Object':
-                        return {type: Object};
-                    default:
-                        throw new Error(`Unrecognized property type "${propType}"`);
-                }
-            }
-            throw new Error(`Unable to find type for property "${propName}"`);
-        }
-        throw new Error('Expecting an object for properties');
-    }*/
-
     getRelativePath(relativeFrom: string, relativeTo: string) {
         let relativePath = path.relative(relativeFrom, relativeTo);
         // path needs to begin with ./
