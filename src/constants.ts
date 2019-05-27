@@ -4,3 +4,4 @@ export const FUNCTION_ON_STATE_CHANGED = 'onStateChanged';
 export const FUNCTION_SHOULD_UPDATE = 'shouldUpdate';
 export const FUNCTION_FIRST_UPDATED = 'firstUpdated';
 export const FUNCTION_UPDATED = 'updated';
+export const REDUX_STORE_FILE_PATH = './store.js';

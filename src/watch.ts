@@ -1,16 +1,16 @@
 import {gulpSeries, gulpWatch} from './gulp';
 import browserSync from 'browser-sync';
 import CodeGenerator from "./codegen";
+import {REDUX_STORE_FILE_PATH} from './constants';
 // import {build} from "./build";
 
-export function watch(configFolder: string, componentFolder: string, sharedCssFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
+export function watch(componentFolder: string, assetFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
     const globs = [
-        `${configFolder}/site.yml`,
         `${componentFolder}/**/*`,
-        `${sharedCssFolder}/**/*`,
+        `${assetFolder}/css/**/*`,
         `${actionFolder}/**/*`,
         `${reducerFolder}/**/*`,
-        './store.js'
+        REDUX_STORE_FILE_PATH
     ];
     const instance = browserSync.create();
     instance.init({
@@ -23,9 +23,8 @@ export function watch(configFolder: string, componentFolder: string, sharedCssFo
 
     const generateTask = async () => {
         const generator = new CodeGenerator(
-            configFolder,
             componentFolder,
-            sharedCssFolder,
+            assetFolder,
             actionFolder,
             reducerFolder,
             jsFolder

@@ -4,8 +4,20 @@ import fs from "fs";
 import prettier from 'prettier';
 import _ from "lodash";
 import {getTemplateVariables} from './ast';
-import {getComponentNameFromTagName, asyncReadFile} from './utils';
-import {COMPONENT_CONFIG, FUNCTION_ON_STATE_CHANGED, FUNCTION_INIT_COMPONENT, FUNCTION_SHOULD_UPDATE, FUNCTION_FIRST_UPDATED, FUNCTION_UPDATED} from './constants';
+import {
+    getComponentNameFromTagName,
+    asyncReadFile,
+    getRelativePath
+} from './utils';
+import {
+    COMPONENT_CONFIG, 
+    FUNCTION_ON_STATE_CHANGED, 
+    FUNCTION_INIT_COMPONENT, 
+    FUNCTION_SHOULD_UPDATE, 
+    FUNCTION_FIRST_UPDATED, 
+    FUNCTION_UPDATED,
+    REDUX_STORE_FILE_PATH
+} from './constants';
 
 _.templateSettings.interpolate = /<%=([\s\S]+?)%>/g;
 import {SIMPLE_COMPONENT, REDUX_COMPONENT} from './templates';
@@ -13,13 +25,15 @@ const SIMPLE_COMPONENT_TEMPLATE = _.template(SIMPLE_COMPONENT);
 const REDUX_COMPONENT_TEMPLATE = _.template(REDUX_COMPONENT);
 
 export default class ComponentGenerator {
+    componentFolder: string;
     file: any;
     tagName: string;
     sharedStyleSheetMap: Map<string, any>;
     actionMap: Map<string, any>;
     reducerMap: Map<string, any>;
     componentExports: any;
-    constructor(file: any, componentExports, sharedStyleSheetMap, actionMap, reducerMap) {
+    constructor(componentFolder: string, file: any, componentExports, sharedStyleSheetMap, actionMap, reducerMap) {
+        this.componentFolder = componentFolder;
         this.file = file;
         this.componentExports = componentExports;
         this.sharedStyleSheetMap = sharedStyleSheetMap;
@@ -32,7 +46,7 @@ export default class ComponentGenerator {
         const componentCss = await this.getComponentCss();
         const relativePath = path.relative(this.file.base, this.file.dirname);
         const componentName = getComponentNameFromTagName(this.tagName);
-        const componentPath = (relativePath !== '') ? `./components/${relativePath}` : `./components`;
+        const componentPath = (relativePath !== '') ? `./${this.componentFolder}/${relativePath}` : `./${this.componentFolder}`;
 
         let html = this.file.contents.toString();
         if (this.file.extname === '.md') {
@@ -98,7 +112,7 @@ export default class ComponentGenerator {
     getImports(componentPath: string, templateRefs: string[], isReduxComponent: boolean) {
         const imports = [];
         if (isReduxComponent) {
-            const relativePath = this.getRelativePath(componentPath, './store.js');
+            const relativePath = getRelativePath(componentPath, REDUX_STORE_FILE_PATH);
             imports.push({
                 name: `store`,
                 path: relativePath
@@ -125,7 +139,7 @@ export default class ComponentGenerator {
             const actionFile = this.actionMap.get(actionFileName);
             const actionExports = actionFile.exports.map((e) => e.name);
             const intersections = _.intersection(templateRefs, actionExports);
-            const relativePath = this.getRelativePath(componentPath, actionFile.path);
+            const relativePath = getRelativePath(componentPath, actionFile.path);
             if (intersections.length > 0) {
                 imports.push({
                     name: `{${intersections.join(', ')}}`,
@@ -140,7 +154,7 @@ export default class ComponentGenerator {
             for (const sharedCssName of componentConfig.includeCss) {
                 if (this.sharedStyleSheetMap.has(sharedCssName)) {
                     const sharedCssPath = this.sharedStyleSheetMap.get(sharedCssName);
-                    const relativePath = this.getRelativePath(componentPath, `./css/${sharedCssPath}`);
+                    const relativePath = getRelativePath(componentPath, sharedCssPath);
                     imports.push({
                         name: `{${sharedCssName}}`,
                         path: relativePath
@@ -150,14 +164,5 @@ export default class ComponentGenerator {
                 }
             }
         }
-    }
-
-    getRelativePath(relativeFrom: string, relativeTo: string) {
-        let relativePath = path.relative(relativeFrom, relativeTo);
-        // path needs to begin with ./
-        if (relativePath.indexOf('.') !== 0) {
-            relativePath = `./${relativePath}`;
-        }
-        return relativePath;
     }
 }

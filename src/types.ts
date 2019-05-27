@@ -1,8 +1,9 @@
 import {Type} from "sambal-fs";
 
+/*
 export interface SambalSiteMeta {
     smallScreenSize: number;
-}
+}*/
 
 export interface DataSource {
     name: string;
@@ -13,7 +14,7 @@ export interface DataSource {
 export interface SambalConfig {
     configFolder?: string;
     componentFolder?: string;
-    sharedCssFolder?: string;
+    assetFolder?: string;
     actionFolder?: string;
     reducerFolder?: string;
     dataFolder?: string;

@@ -13,11 +13,11 @@ import {parseDataYmlFile} from "./validate";
 import {watch} from "./watch";
 
 const DEFAULT_OPTIONS: SambalConfig = {
-    configFolder: "sambal",
+    configFolder: "config",
     componentFolder: "components",
     actionFolder: "actions",
     reducerFolder: "reducers",
-    sharedCssFolder: "css",
+    assetFolder: "assets",
     dataFolder: "data",
     jsFolder: "js"
 };
@@ -81,9 +81,8 @@ if (program.generate) {
 
 async function generateCode() {
     const generator = new CodeGenerator(
-        DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
-        DEFAULT_OPTIONS.sharedCssFolder,
+        DEFAULT_OPTIONS.assetFolder,
         DEFAULT_OPTIONS.actionFolder,
         DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder
@@ -95,9 +94,8 @@ async function startWatch() {
     await generateCode();
     // await build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
     watch(
-        DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
-        DEFAULT_OPTIONS.sharedCssFolder,
+        DEFAULT_OPTIONS.assetFolder,
         DEFAULT_OPTIONS.actionFolder,
         DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder

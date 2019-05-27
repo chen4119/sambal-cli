@@ -1,13 +1,9 @@
 import path from 'path';
 import del from "delete";
 import _ from "lodash";
-import yaml from "js-yaml";
 
 import {gulpSeries, gulpParallel, gulpSrc, gulpRename, gulpDest} from './gulp';
-import {SambalSiteMeta} from './types';
-import {
-    asyncReadFile
-} from './utils';
+import {REDUX_STORE_FILE_PATH} from './constants';
 import {STYLESHEET} from './templates';
 import {getExportVariables, parseComponentJs} from "./ast";
 import ComponentGenerator from "./componentGenerator";
@@ -16,9 +12,8 @@ _.templateSettings.interpolate = /<%=([\s\S]+?)%>/g;
 const STYLESHEET_TEMPLATE = _.template(STYLESHEET);
 
 export default class CodeGenerator {
-    configFolder: string;
     componentFolder: string;
-    sharedCssFolder: string;
+    assetFolder: string;
     actionFolder: string;
     reducerFolder: string;
     jsFolder: string;
@@ -27,29 +22,21 @@ export default class CodeGenerator {
     componentExportMap: Map<string, any> = new Map<string, any>();
     actionMap: Map<string, any> = new Map<string, any>();
     reducerMap: Map<string, any> = new Map<string, any>();
-    siteConfig: SambalSiteMeta = {smallScreenSize: 767};
-    constructor(configFolder: string, componentFolder: string, sharedCssFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
-        this.configFolder = configFolder;
+    constructor(componentFolder: string, assetFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
         this.componentFolder = componentFolder;
-        this.sharedCssFolder = sharedCssFolder;
+        this.assetFolder = assetFolder;
         this.actionFolder = actionFolder;
         this.reducerFolder = reducerFolder;
         this.jsFolder = jsFolder;
     }
 
     async generate() {
-        const sitePath = `${this.configFolder}/site.yml`;
-        const siteContent = await asyncReadFile(sitePath);
-        let site: SambalSiteMeta = yaml.safeLoad(siteContent.toString());
-        if (!site) {
-            this.siteConfig = site;
-        }
-
         const iterateActionsTask = () => this.iterateActionsReducers(`${this.actionFolder}/**/*`, 'actions', `${this.jsFolder}/actions`, this.actionMap);
         const iterateReducersTask = () => this.iterateActionsReducers(`${this.reducerFolder}/**/*`, 'reducers', `${this.jsFolder}/reducers`, this.reducerMap);
 
         const buildDependencies = gulpParallel(
             this.copyFiles.bind(this),
+            this.copyAssets.bind(this),
             this.generateSharedCss.bind(this),
             this.iterateComponentExportJs.bind(this),
             iterateActionsTask,
@@ -81,7 +68,11 @@ export default class CodeGenerator {
     }
 
     copyFiles() {
-        return gulpSrc(['./store.js'], (file) => {}).pipe(gulpDest(this.jsFolder));
+        return gulpSrc([REDUX_STORE_FILE_PATH], (file) => {}).pipe(gulpDest(this.jsFolder));
+    }
+
+    copyAssets() {
+        return gulpSrc([`${this.assetFolder}/**/*`, `!${this.assetFolder}/css/**/*`], (file) => {}).pipe(gulpDest(`${this.jsFolder}/${this.assetFolder}`));
     }
 
     iterateActionsReducers(
@@ -121,6 +112,7 @@ export default class CodeGenerator {
         return gulpSrc([`${this.componentFolder}/**/*.html`, `${this.componentFolder}/**/*.md`], async (file) => {
             const tagName = path.basename(file.basename, file.extname);
             const generator = new ComponentGenerator(
+                this.componentFolder,
                 file,
                 this.componentExportMap.get(tagName),
                 this.sharedStyleSheetMap,
@@ -131,7 +123,7 @@ export default class CodeGenerator {
             file.contents = new Buffer(source);
         })
         .pipe(gulpRename(".js"))
-        .pipe(gulpDest(`${this.jsFolder}/components`));
+        .pipe(gulpDest(`${this.jsFolder}/${this.componentFolder}`));
     }
     
     transformSharedCss(file:any) {
@@ -147,15 +139,15 @@ export default class CodeGenerator {
         });
         file.contents = new Buffer(styleSheet);
     
-        const styleSheetPath = (relativePath !== '') ? `${relativePath}/${styleName}.js` : `${styleName}.js`;
+        const styleSheetPath = (relativePath !== '') ? `./${this.assetFolder}/css/${relativePath}/${styleName}.js` : `./${this.assetFolder}/css/${styleName}.js`;
         this.sharedStyleSheetMap.set(styleName, styleSheetPath);
     }
     
     generateSharedCss() {
-        return gulpSrc(`${this.sharedCssFolder}/**/*.css`, (file) => {
+        return gulpSrc(`${this.assetFolder}/css/**/*.css`, (file) => {
             this.transformSharedCss(file);
         })
         .pipe(gulpRename(".js"))
-        .pipe(gulpDest(`${this.jsFolder}/css`));
+        .pipe(gulpDest(`${this.jsFolder}/${this.assetFolder}/css`));
     }
 }
