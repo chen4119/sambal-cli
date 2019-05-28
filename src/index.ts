@@ -5,20 +5,19 @@ import del from "delete";
 import yaml from "js-yaml";
 import {Schema, Collection, Type} from "sambal-fs";
 import {version} from "../package.json";
-import {generate} from "./generator";
+import CodeGenerator from "./codegen";
 import {collect} from "./collector";
 import {SambalConfig} from "./types";
 import {parseDataYmlFile} from "./validate";
-import {build} from "./build";
+// import {build} from "./build";
 import {watch} from "./watch";
-import { types } from "util";
 
 const DEFAULT_OPTIONS: SambalConfig = {
-    configFolder: "sambal",
+    configFolder: "config",
     componentFolder: "components",
     actionFolder: "actions",
     reducerFolder: "reducers",
-    sharedCssFolder: "css",
+    assetFolder: "assets",
     dataFolder: "data",
     jsFolder: "js"
 };
@@ -55,14 +54,7 @@ program
     .parse(process.argv);
 
 if (program.generate) {
-    generate(
-        DEFAULT_OPTIONS.configFolder,
-        DEFAULT_OPTIONS.componentFolder,
-        DEFAULT_OPTIONS.sharedCssFolder,
-        DEFAULT_OPTIONS.actionFolder,
-        DEFAULT_OPTIONS.reducerFolder,
-        DEFAULT_OPTIONS.jsFolder
-    );
+    generateCode();
 } else if (program.collect) {
     del.sync([`${DEFAULT_OPTIONS.dataFolder}`]);
     const content = fs.readFileSync(`${DEFAULT_OPTIONS.configFolder}/data.yml`, 'utf8');
@@ -71,7 +63,7 @@ if (program.generate) {
     const schema: Schema = {types: data.types, collections: data.collections};
     collect(data.sources, schema, DEFAULT_OPTIONS.dataFolder);
 } else if (program.build) {
-    build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
+    // build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
 } else if (program.watch) {
     /*
     child_process.exec('node ./node_modules/polymer-cli/bin/polymer.js serve', (error, stdout, stderr) => {
@@ -87,20 +79,23 @@ if (program.generate) {
     }, 2000);
 }
 
-async function startWatch() {
-    await generate(
-        DEFAULT_OPTIONS.configFolder,
+async function generateCode() {
+    const generator = new CodeGenerator(
         DEFAULT_OPTIONS.componentFolder,
-        DEFAULT_OPTIONS.sharedCssFolder,
+        DEFAULT_OPTIONS.assetFolder,
         DEFAULT_OPTIONS.actionFolder,
         DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder
     );
+    await generator.generate();
+}
+
+async function startWatch() {
+    await generateCode();
     // await build(`${DEFAULT_OPTIONS.jsFolder}/app.js`, "bundle.js");
     watch(
-        DEFAULT_OPTIONS.configFolder,
         DEFAULT_OPTIONS.componentFolder,
-        DEFAULT_OPTIONS.sharedCssFolder,
+        DEFAULT_OPTIONS.assetFolder,
         DEFAULT_OPTIONS.actionFolder,
         DEFAULT_OPTIONS.reducerFolder,
         DEFAULT_OPTIONS.jsFolder

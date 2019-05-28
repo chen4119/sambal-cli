@@ -18,7 +18,11 @@
     --app-drawer-selected-color: #78909C;
 }
 
-main {
+main > * {
+    display: none;
+}
+
+main > [active] {
     display: block;
 }
 

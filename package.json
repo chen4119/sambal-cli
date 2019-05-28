@@ -1,8 +1,8 @@
 {
     "name": "sambal-cli",
-    "version": "0.0.4",
+    "version": "0.0.10",
     "description": "Sambal CLI tools",
-    "main": "index.js",
+    "main": "dist/src/index.js",
     "repository": {
         "type": "git",
         "url": "https://github.com/chen4119/sambal-cli"
@@ -25,16 +25,15 @@
     },
     "scripts": {
         "start": "npm run serve & npm run watch",
-        "build": "rollup -c",
+        "build": "tsc",
         "generate": "./bin/sambal -g",
         "serve": "polymer serve --port 8081",
         "serve:static": "polymer serve --port 5000 build/esm-bundled",
         "watch": "./bin/sambal -w",
-        "polymer": "polymer build"
+        "polymer": "polymer build",
+        "ast": "ts-node ./src/index.ts -g"
     },
     "dependencies": {
-        "@babel/core": "7.1.5",
-        "babel-preset-minify": "0.4.3",
         "commander": "2.19.0",
         "gulp": "4.0.0",
         "gulp-rename": "1.4.0",
@@ -44,27 +43,35 @@
         "through2": "3.0.0",
         "js-yaml": "3.12.0",
         "gray-matter": "4.0.1",
-        "sambal": "0.0.6",
-        "sambal-fs": "0.0.4",
+        "prettier": "1.17.0",
         "browser-sync": "2.26.3",
-        "rollup": "0.67.0",
-        "rollup-plugin-babel": "4.0.3",
-        "rollup-plugin-node-resolve": "3.4.0",
+        "typescript": "3.1.6",
         "polymer-cli": "1.9.2",
-        "@polymer/app-layout": "3.0.2"
+        "sambal-fs": "0.0.4",
+        "lit-element": "2.1.0",
+        "pwa-helpers": "0.9.1",
+        "redux": "4.0.1",
+        "redux-thunk": "2.3.0",
+        "@webcomponents/webcomponentsjs": "2.2.10"
     },
     "devDependencies": {
+        "@babel/core": "7.1.5",
+        "babel-preset-minify": "0.4.3",
         "@types/gulp": "4.0.5",
         "@types/node": "10.12.10",
         "@types/through2": "2.0.34",
         "@types/marked": "0.4.2",
         "@types/js-yaml": "3.11.2",
         "@types/lodash": "4.14.118",
-        "typescript": "3.1.6",
+        "@types/prettier": "1.16.3",
         "tslib": "1.9.3",
         "tslint": "5.11.0",
         "ts-node": "7.0.1",
+        "rollup": "0.67.0",
         "rollup-plugin-typescript": "1.0.0",
-        "rollup-plugin-json": "3.1.0"
+        "rollup-plugin-json": "3.1.0",
+        "rollup-plugin-babel": "4.0.3",
+        "rollup-plugin-node-resolve": "3.4.0",
+        "@polymer/app-layout": "3.0.2"
     }
 }

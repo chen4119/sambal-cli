@@ -21,3 +21,8 @@ export async function build(input: string, output: string) {
         format: 'esm'
     });
 }
+
+/*
+(async () => {
+    await build(`./js/components/app.js`, './build/test.js');
+})();*/

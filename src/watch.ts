@@ -1,21 +1,16 @@
 import {gulpSeries, gulpWatch} from './gulp';
 import browserSync from 'browser-sync';
-import {generate} from "./generator";
-import {build} from "./build";
+import CodeGenerator from "./codegen";
+import {REDUX_STORE_FILE_PATH} from './constants';
+// import {build} from "./build";
 
-export async function watch(configFolder: string, componentFolder: string, sharedCssFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
+export function watch(componentFolder: string, assetFolder: string, actionFolder: string, reducerFolder: string, jsFolder: string) {
     const globs = [
-        `${configFolder}/site.yml`,
-        `${configFolder}/routes.yml`,
-        `${configFolder}/eager.js`,
-        `${configFolder}/lazy.js`,
         `${componentFolder}/**/*`,
-        `${sharedCssFolder}/**/*`,
+        `${assetFolder}/css/**/*`,
         `${actionFolder}/**/*`,
         `${reducerFolder}/**/*`,
-        './app.css',
-        './app.html',
-        './app.md'
+        REDUX_STORE_FILE_PATH
     ];
     const instance = browserSync.create();
     instance.init({
@@ -26,7 +21,16 @@ export async function watch(configFolder: string, componentFolder: string, share
         proxy: "localhost:8081"
     });
 
-    const generateTask = () => generate(configFolder, componentFolder, sharedCssFolder, actionFolder, reducerFolder, jsFolder);
+    const generateTask = async () => {
+        const generator = new CodeGenerator(
+            componentFolder,
+            assetFolder,
+            actionFolder,
+            reducerFolder,
+            jsFolder
+        );
+        await generator.generate();
+    };
     // const buildTask = () => build(`${jsFolder}/app.js`, output);
     const reloadTask = (cb) => {
         instance.reload();

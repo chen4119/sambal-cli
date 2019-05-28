@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 
 export function getComponentNameFromTagName(tagName: string) {
     const names = tagName.split('-').map((name) => name.charAt(0).toUpperCase() + name.slice(1));
@@ -15,7 +16,7 @@ export function getPropertyValue(type: string, value: any) {
 }
 
 export function asyncReadFile(inputPath: string) {
-    return new Promise(function(resolve, reject) {
+    return new Promise<string>(function(resolve, reject) {
         fs.readFile(inputPath, 'utf8', function(err, contents) {
             if (err) {
                 reject(err);
@@ -42,3 +43,13 @@ export function asyncWriteFile(outputPath: string, content: string | Object) {
         });
     });
 }
+
+export function getRelativePath(relativeFrom: string, relativeTo: string) {
+    let relativePath = path.relative(relativeFrom, relativeTo);
+    // path needs to begin with ./
+    if (relativePath.indexOf('.') !== 0) {
+        relativePath = `./${relativePath}`;
+    }
+    return relativePath;
+}
+
