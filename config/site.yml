@@ -1,7 +1,0 @@
-smallScreenSize: 800
-title: Wan Chun Chen
-nav:
-    - name: About Us!
-      path: /about
-    - name: Resume
-      path: /resume
