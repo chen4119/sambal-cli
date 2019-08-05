@@ -24,7 +24,9 @@
         "sambal": "./bin/sambal"
     },
     "scripts": {
-        "start": "ts-node src/index.ts",
+        "start": "ts-node src/generator.ts",
+        "test": "ts-node src/index.ts person --full ./test.json",
+        "help": "ts-node src/index.ts --help",
         "build": "tsc"
     },
     "dependencies": {

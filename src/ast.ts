@@ -78,3 +78,12 @@ export function makeVariableStatement(modifiers: ts.Modifier[], variableName: st
         )
     );
 }
+
+export function makeEnum(modifiers: ts.Modifier[], enumName: string, values: string[]) {
+    return ts.createEnumDeclaration(
+        undefined,
+        modifiers,
+        makeIdentifier(enumName),
+        values.map((v) => ts.createEnumMember(makeIdentifier(v), undefined))
+    );
+}

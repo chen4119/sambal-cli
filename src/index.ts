@@ -1,16 +1,75 @@
 import program from "commander";
 import {version} from "../package.json";
-import SchemaGenerator from "./SchemaGenerator";
+import {SCHEMA_PREFIX} from "./constants";
+import {
+    Thing,
+    Person,
+    Organization
+} from "./schema";
 
-const types = [
-    {name: "BlogPosting", id: "http://schema.org/BlogPosting"}
+const CONDENSED_THING = {
+    description: "Description",
+    identifier: "Unique identifier or URL",
+    image: "URL to image or ImageObject",
+    name: "Name",
+    sameAs: ["URL to same thing1", "URL to same thing2"]
+};
+
+const CONDENSED_CREATIVE_WORK = {
+    author: "Person or Organization",
+    datePublished: "Datetime",
+    headline: "Headline",
+    keywords: ["keyword1", "keyword2"]
+};
+
+const CONDENSED_PERSON = {
+    colleagues: ["URL to Person1", "URL to Person2"],
+    email: "Email",
+    familyName: "Family name",
+    follows: ["URL to Person1", "URL to Person2"],
+    gender: "Male or Female",
+    givenName: "First name",
+    knows: ["URL to Person1", "URL to Person2"],
+    nationality: "Country",
+    worksFor: "URL to organization"
+};
+
+const CONDENSED_ORGANIZATION = {
+    address: "Address",
+    email: "Email",
+    founders: ["URL to Person1", "URL to Person2"],
+    telephone: "Telephone #"
+};
+
+
+const CMD_TYPES = [
+    {id: `${SCHEMA_PREFIX}/Person`, name: "person"},
+
 ];
-const generator = new SchemaGenerator("./schema.jsonld", "./test.js");
-generator.generateObjectForTypes(types);
+
+for (let i = 0; i < CMD_TYPES.length; i++) {
+    program
+        .command(`${CMD_TYPES[i].name} <output>`)
+        .option("-f, --full", "Full schema")
+        .action(makeSchema);
+}
+
+program
+.version(version)
+.parse(process.argv);
+
+if (program.person) {
+    console.log(program.person)
+}
+
+function makeSchema(output, cmd) {
+    console.log(output);
+    console.log(cmd.full);
+}
+
 
 /*
-program
-    .version(version)
+program.version(version);
     .option('-g, --generate', 'Generate Sambal javascript files')
     .option('-c, --collect', 'Generate data collection')
     .option('-b, --build', 'Build project')
