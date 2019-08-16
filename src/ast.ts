@@ -87,3 +87,11 @@ export function makeEnum(modifiers: ts.Modifier[], enumName: string, values: str
         values.map((v) => ts.createEnumMember(makeIdentifier(v), undefined))
     );
 }
+
+export function makeNew(expression: ts.Expression, args: ts.Expression[]): ts.NewExpression {
+    return ts.createNew(
+        expression,
+        undefined,
+        args
+    );
+}

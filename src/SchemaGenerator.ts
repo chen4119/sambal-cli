@@ -1,6 +1,6 @@
 import fs from "fs";
 import ts from "typescript";
-import {makeVariableStatement, EXPORT_MODIFIER, objectToObjectLiteral, makeEnum} from "./ast";
+import {makeVariableStatement, EXPORT_MODIFIER, objectToObjectLiteral, makeArrayLiteral, makeStringLiteral, makeIdentifier, makeNew} from "./ast";
 const ID = "@id";
 const SUBCLASS = "rdfs:subClassOf";
 const TYPE = "@type";
@@ -63,13 +63,15 @@ class SchemaGenerator {
                 }
             }
         }
+        /*
         for (const classId of this.classPropertiesMap.keys()) {
             this.makeObjectLiteralForClass(classId, statements);
         }
         for (const classId of this.enumValuesMap.keys()) {
             const enumeration: SchemaEnumeration = this.enumValuesMap.get(classId);
             statements.push(makeEnum([EXPORT_MODIFIER], enumeration.name, enumeration.values));
-        }
+        }*/
+        this.makeSchemaMap(statements);
         this.writeJavascript(statements);
     }
 
@@ -135,6 +137,31 @@ class SchemaGenerator {
             obj[prop.name] = prop.types;
         }
         const stmt = makeVariableStatement([EXPORT_MODIFIER], clazz.name, objectToObjectLiteral(obj));
+        statements.push(stmt);
+    }
+
+    private makeSchemaMap(statements) {
+        const mappings = [];
+        for (const classId of this.classPropertiesMap.keys()) {
+            const clazz: SchemaClass = this.classPropertiesMap.get(classId); 
+            const obj = {};
+            if (clazz.parent) {
+                obj["_parent"] = clazz.parent.toLowerCase();
+            }
+            clazz.properties.sort((a, b) => a.name.localeCompare(b.name));
+            for (const prop of clazz.properties) {
+                obj[prop.name] = prop.types;
+            }
+            mappings.push(makeArrayLiteral([makeStringLiteral(classId.toLowerCase()), objectToObjectLiteral(obj)]));
+        }
+        for (const classId of this.enumValuesMap.keys()) {
+            const enumeration: SchemaEnumeration = this.enumValuesMap.get(classId);
+            const obj = {
+                ["_values"]: enumeration.values
+            };
+            mappings.push(makeArrayLiteral([makeStringLiteral(classId.toLowerCase()), objectToObjectLiteral(obj)]));
+        }
+        const stmt = makeVariableStatement([EXPORT_MODIFIER], "schemaMap", makeNew(makeIdentifier("Map"), [makeArrayLiteral(mappings)]));
         statements.push(stmt);
     }
 
