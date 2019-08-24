@@ -1,6 +1,6 @@
 import fs from "fs";
 import ts from "typescript";
-import {makeVariableStatement, EXPORT_MODIFIER, objectToObjectLiteral, makeArrayLiteral, makeStringLiteral, makeIdentifier, makeNew} from "./ast";
+import {makeVariableStatement, EXPORT_MODIFIER, objectToObjectLiteral, makeArrayLiteral, makeStringLiteral, makeIdentifier, makeNew} from "./AstFactory";
 const ID = "@id";
 const SUBCLASS = "rdfs:subClassOf";
 const TYPE = "@type";
@@ -20,7 +20,7 @@ type SchemaProperty = {
 type SchemaClass = {
     id: string,
     name: string,
-    parent?: string,
+    parent?: string[],
     properties: SchemaProperty[]
 };
 
@@ -63,14 +63,6 @@ class SchemaGenerator {
                 }
             }
         }
-        /*
-        for (const classId of this.classPropertiesMap.keys()) {
-            this.makeObjectLiteralForClass(classId, statements);
-        }
-        for (const classId of this.enumValuesMap.keys()) {
-            const enumeration: SchemaEnumeration = this.enumValuesMap.get(classId);
-            statements.push(makeEnum([EXPORT_MODIFIER], enumeration.name, enumeration.values));
-        }*/
         this.makeSchemaMap(statements);
         this.writeJavascript(statements);
     }
@@ -91,7 +83,7 @@ class SchemaGenerator {
                 properties: []
             };
             if (schema[SUBCLASS]) {
-                clazz.parent = schema[SUBCLASS][ID];
+                clazz.parent = Array.isArray(schema[SUBCLASS]) ? schema[SUBCLASS].map(type => type[ID]) : [schema[SUBCLASS][ID]];
             }
             this.classPropertiesMap.set(typeId, clazz);
         }
@@ -113,7 +105,7 @@ class SchemaGenerator {
             const clazz: SchemaClass = this.classPropertiesMap.get(classId);
             clazz.properties.push({
                 name: propSchema[LABEL],
-                types: Array.isArray(propSchema[RANGE_INCLUDES]) ? propSchema[RANGE_INCLUDES].map((type) => type[ID]) : [propSchema[RANGE_INCLUDES][ID]]
+                types: Array.isArray(propSchema[RANGE_INCLUDES]) ? propSchema[RANGE_INCLUDES].map(type => type[ID]) : [propSchema[RANGE_INCLUDES][ID]]
             });
         }
     }
@@ -126,27 +118,15 @@ class SchemaGenerator {
         }
     }
 
-    private makeObjectLiteralForClass(classId: string, statements) {
-        const clazz: SchemaClass = this.classPropertiesMap.get(classId);
-        const obj = {
-            ["_id"]: classId,
-            ["_parent"]: clazz.parent
-        };
-        clazz.properties.sort((a, b) => a.name.localeCompare(b.name));
-        for (const prop of clazz.properties) {
-            obj[prop.name] = prop.types;
-        }
-        const stmt = makeVariableStatement([EXPORT_MODIFIER], clazz.name, objectToObjectLiteral(obj));
-        statements.push(stmt);
-    }
-
     private makeSchemaMap(statements) {
         const mappings = [];
         for (const classId of this.classPropertiesMap.keys()) {
             const clazz: SchemaClass = this.classPropertiesMap.get(classId); 
             const obj = {};
+            obj["_id"] = classId;
+            obj["_name"] = clazz.name;
             if (clazz.parent) {
-                obj["_parent"] = clazz.parent.toLowerCase();
+                obj["_parent"] = clazz.parent;
             }
             clazz.properties.sort((a, b) => a.name.localeCompare(b.name));
             for (const prop of clazz.properties) {
@@ -164,100 +144,6 @@ class SchemaGenerator {
         const stmt = makeVariableStatement([EXPORT_MODIFIER], "schemaMap", makeNew(makeIdentifier("Map"), [makeArrayLiteral(mappings)]));
         statements.push(stmt);
     }
-
-    /*
-    generateObjectForTypes(types: string[]) {
-        const statements = [];
-        const generatedTypeSet = new Set<string>();
-        for (const typeId of types) {
-            this.traverseTypeHierarchy(typeId, generatedTypeSet, statements);
-        }
-        this.writeJavascript(statements);
-    }
-
-    private traverseTypeHierarchy(typeId: string, generatedTypeSet: Set<string>, statements) {
-        if (generatedTypeSet.has(typeId)) {
-            return;
-        }
-        const matches = this.find({
-            [ID]: typeId,
-            [TYPE]: CLASS
-        });
-        if (matches.length === 1) {
-            generatedTypeSet.add(typeId);
-            const schema = matches[0];
-            const obj = this.getObjectForType(schema);
-            obj["_id"] = typeId;
-            if (schema[SUBCLASS]) {
-                const parentId = schema[SUBCLASS][ID];
-                obj["_parent"] = parentId;
-                this.traverseTypeHierarchy(parentId, generatedTypeSet, statements);
-            }
-            const stmt = makeVariableStatement([EXPORT_MODIFIER], schema[LABEL], objectToObjectLiteral(obj));
-            statements.push(stmt);
-        } else {
-            throw new Error(`${typeId} not found`);
-        }
-    }
-
-    private getObjectForType(schema) {
-        const obj = {};
-        const properties = this.getPropertiesForType(schema[ID]);
-        properties.sort((a, b) => a.propName.localeCompare(b.propName));
-        for (const prop of properties) {
-            obj[prop.propName] = prop.types;
-        }
-        return obj;
-    }
-
-    private getPropertiesForType(type) {
-        const matches = this.find({
-            [DOMAIN_INCLUDES]: type,
-            [TYPE]: "rdf:Property"
-        });
-        return matches.map((prop) => ({
-            propName: prop[LABEL],
-            types: Array.isArray(prop[RANGE_INCLUDES]) ? prop[RANGE_INCLUDES].map((type) => type[ID]) : [prop[RANGE_INCLUDES][ID]]
-        }));
-    }
-
-    private find(criterias) {
-        const matches = [];
-        for (let i = 0; i < this.graph.length; i++) {
-            if (this.isMatch(this.graph[i], criterias)) {
-                matches.push(this.graph[i]);
-            }
-        }
-        return matches;
-    }
-
-    private isMatch(schema, criterias) {
-        for (const key of Object.keys(criterias)) {
-            if (!schema[key]) {
-                return false;
-            }
-            const isTrue = this.isEqualOrInclude(schema[key], criterias[key]);
-            if (!isTrue) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private isEqualOrInclude(schemaValue, searchValue) {
-        if (Array.isArray(schemaValue)) {
-            for (let i = 0; i < schemaValue.length; i++) {
-                const isTrue = this.isEqualOrInclude(schemaValue[i], searchValue);
-                if (isTrue) {
-                    return true;
-                }
-            }
-            return false;
-        } else if (typeof(schemaValue) === "object") {
-            return schemaValue[ID] === searchValue;
-        }
-        return schemaValue === searchValue;
-    }*/
 
     private writeJavascript(statements) {
         const tsPrinter = ts.createPrinter({

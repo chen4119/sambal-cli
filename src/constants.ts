@@ -1,1 +1,0 @@
-export const SCHEMA_PREFIX = "http://schema.org";
