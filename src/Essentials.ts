@@ -1,6 +1,6 @@
-import {AUTO} from "./constants";
+import {AUTO} from "./Constants";
 
-type EssentialProperties = {
+export type EssentialProperties = {
     id: string,
     requiredByGoogle?: any,
     recommendedByGoogle?: any,
@@ -16,7 +16,8 @@ const Thing: EssentialProperties = {
     },
     essential: {
         identifier: "Unique identifier or URL",
-        sameAs: ["URL to same thing1", "URL to same thing2"]
+        sameAs: AUTO,
+        url: "Will be auto populated by Sambal"
     }
 };
 
@@ -51,13 +52,13 @@ const Person: EssentialProperties = {
         name: AUTO
     },
     essential: {
-        colleagues: ["URL to Person1", "URL to Person2"],
+        colleague: AUTO,
         email: AUTO,
         familyName: AUTO,
-        follows: ["URL to Person1", "URL to Person2"],
+        follows: AUTO,
         gender: AUTO,
         givenName: AUTO,
-        knows: ["URL to Person1", "URL to Person2"],
+        knows: AUTO,
         nationality: AUTO,
         worksFor: AUTO
     }
@@ -73,7 +74,7 @@ const Organization: EssentialProperties = {
     essential: {
         address: AUTO,
         email: AUTO,
-        founders: ["URL to Person1", "URL to Person2"]
+        founder: AUTO
     }
 };
 
@@ -109,8 +110,8 @@ const Product: EssentialProperties = {
         category: AUTO,
         model: AUTO,
         hasProductReturnPolicy: AUTO,
-        isRelatedTo: ["Product1", "Product2"],
-        iSimilarTo: ["Product1", "Product2"]
+        isRelatedTo: AUTO,
+        iSimilarTo: AUTO
     }
 };
 

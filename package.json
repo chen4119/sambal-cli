@@ -25,7 +25,7 @@
     },
     "scripts": {
         "start": "ts-node src/generator.ts",
-        "test": "ts-node src/index.ts person --full ./test.json",
+        "test": "ts-node src/index.ts schema --full person ./test.json",
         "help": "ts-node src/index.ts --help",
         "build": "tsc"
     },

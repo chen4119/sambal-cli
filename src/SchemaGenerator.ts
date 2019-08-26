@@ -1,16 +1,17 @@
 import fs from "fs";
 import ts from "typescript";
 import {makeVariableStatement, EXPORT_MODIFIER, objectToObjectLiteral, makeArrayLiteral, makeStringLiteral, makeIdentifier, makeNew} from "./AstFactory";
+import {SCHEMA_PREFIX, SAMBAL_ID, SAMBAL_NAME, SAMBAL_PARENT, SAMBAL_VALUES} from "./Constants";
 const ID = "@id";
 const SUBCLASS = "rdfs:subClassOf";
 const TYPE = "@type";
 const LABEL = "rdfs:label";
 const CLASS = "rdfs:Class";
 const PROPERTY = "rdf:Property";
-const SUPERSEDEDBY = "http://schema.org/supersededBy";
-const DOMAIN_INCLUDES = "http://schema.org/domainIncludes";
-const RANGE_INCLUDES = "http://schema.org/rangeIncludes";
-const ENUMERATION = "http://schema.org/Enumeration";
+const SUPERSEDEDBY = `${SCHEMA_PREFIX}/supersededBy`;
+const DOMAIN_INCLUDES = `${SCHEMA_PREFIX}/domainIncludes`;
+const RANGE_INCLUDES = `${SCHEMA_PREFIX}/rangeIncludes`;
+const ENUMERATION = `${SCHEMA_PREFIX}/Enumeration`;
 
 type SchemaProperty = {
     name: string,
@@ -123,10 +124,10 @@ class SchemaGenerator {
         for (const classId of this.classPropertiesMap.keys()) {
             const clazz: SchemaClass = this.classPropertiesMap.get(classId); 
             const obj = {};
-            obj["_id"] = classId;
-            obj["_name"] = clazz.name;
+            obj[SAMBAL_ID] = classId;
+            obj[SAMBAL_NAME] = clazz.name;
             if (clazz.parent) {
-                obj["_parent"] = clazz.parent;
+                obj[SAMBAL_PARENT] = clazz.parent;
             }
             clazz.properties.sort((a, b) => a.name.localeCompare(b.name));
             for (const prop of clazz.properties) {
@@ -137,7 +138,7 @@ class SchemaGenerator {
         for (const classId of this.enumValuesMap.keys()) {
             const enumeration: SchemaEnumeration = this.enumValuesMap.get(classId);
             const obj = {
-                ["_values"]: enumeration.values
+                [SAMBAL_VALUES]: enumeration.values
             };
             mappings.push(makeArrayLiteral([makeStringLiteral(classId.toLowerCase()), objectToObjectLiteral(obj)]));
         }
