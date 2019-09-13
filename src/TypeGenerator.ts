@@ -1,6 +1,20 @@
 import {schemaMap} from "./Schema";
 import {essentialPropertiesMap, EssentialProperties} from "./Essentials";
-import {TEXT, NUMBER, FLOAT, INTEGER, BOOL, DATE, DATETIME, TIME, URL, SAMBAL_ID, SAMBAL_PARENT, SAMBAL_NAME, SAMBAL_VALUES, AUTO} from "./Constants";
+import {
+    SCHEMA_TEXT, 
+    SCHEMA_NUMBER, 
+    SCHEMA_FLOAT, 
+    SCHEMA_INTEGER, 
+    SCHEMA_BOOL, 
+    SCHEMA_DATE, 
+    SCHEMA_DATETIME, 
+    SCHEMA_TIME, 
+    SCHEMA_URL, 
+    SAMBAL_ID, 
+    SAMBAL_PARENT, 
+    SAMBAL_NAME, 
+    SAMBAL_VALUES, AUTO
+} from "./Constants";
 
 class TypeGenerator {
     private typeProperties = {};
@@ -21,15 +35,15 @@ class TypeGenerator {
 
     generate() {
         const typeSchema = schemaMap.get(this.typeId.toLowerCase());
-        this.addSchemaProperties(this.typeProperties, typeSchema);
-        this.traverseParentHierarchy(typeSchema, (parentId, parentSchema) => {
-            this.addSchemaProperties(this.typeProperties, parentSchema);
+        TypeGenerator.addSchemaProperties(this.typeProperties, typeSchema);
+        TypeGenerator.traverseParentHierarchy(typeSchema, (parentId, parentSchema) => {
+            TypeGenerator.addSchemaProperties(this.typeProperties, parentSchema);
         });
         
         if (essentialPropertiesMap.has(this.typeId)) {
             this.combineEssentialProperties(essentialPropertiesMap.get(this.typeId), this.typeEssentials);
         }
-        this.traverseParentHierarchy(typeSchema, (parentId) => {
+        TypeGenerator.traverseParentHierarchy(typeSchema, (parentId) => {
             if (essentialPropertiesMap.has(parentId)) {
                 this.combineEssentialProperties(essentialPropertiesMap.get(parentId), this.typeEssentials);
             }
@@ -86,7 +100,7 @@ class TypeGenerator {
         to.essential = {...from.essential, ...to.essential};
     }
 
-    private traverseParentHierarchy(schema, callbackFn) {
+    static traverseParentHierarchy(schema, callbackFn) {
         const schemaParents = schema[SAMBAL_PARENT];
         if (schemaParents) {
             for (const parentId of schemaParents) {
@@ -97,7 +111,7 @@ class TypeGenerator {
         }
     }
 
-    private addSchemaProperties(typeObj: any, schema: any) {
+    static addSchemaProperties(typeObj: any, schema: any) {
         for (const propName of Object.keys(schema)) {
             if (!propName.startsWith("_") && !typeObj[propName]) {
                 typeObj[propName] = schema[propName];
@@ -116,41 +130,40 @@ class TypeGenerator {
         }
     }
 
-    // property can have multiple types.  Prefer schema.org enum.  If not, return first type
     private getMeaningfulPropValue(propName: string) {
         const propTypes = this.typeProperties[propName];
-        let firstValue = null;
+        const propValues = [];
         for (const type of propTypes) {
             const value = this.getValueForType(type);
             // value is enum
             if (Array.isArray(value)) {
-                return value.join(", ");
-            } else if (!firstValue) {
-                firstValue = value;
+                propValues.push(value.join(", "));
+            } else {
+                propValues.push(value);
             }
         }
-        return firstValue;
+        return propValues.join(" or ");
     }
 
     private getValueForType(type: string) {
         switch (type) {
-            case TEXT:
+            case SCHEMA_TEXT:
                 return "text";
-            case NUMBER:
+            case SCHEMA_NUMBER:
                 return "number";
-            case FLOAT:
+            case SCHEMA_FLOAT:
                 return "float";
-            case INTEGER:
+            case SCHEMA_INTEGER:
                 return "integer";
-            case TIME:
+            case SCHEMA_TIME:
                 return "time, use format specified in sambal.yml";
-            case DATE:
+            case SCHEMA_DATE:
                 return "date, use format specified in sambal.yml";
-            case DATETIME:
+            case SCHEMA_DATETIME:
                 return "datetime, use format specified in sambal.yml";
-            case BOOL:
+            case SCHEMA_BOOL:
                 return "true or false";
-            case URL:
+            case SCHEMA_URL:
                 return "url";
             default:
                 const typeSchemaId = type.toLowerCase();

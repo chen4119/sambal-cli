@@ -1,4 +1,4 @@
-import {AUTO} from "./Constants";
+import {AUTO, JSONLD_ID, JSONLD_TYPE} from "./Constants";
 
 export type EssentialProperties = {
     id: string,
@@ -70,6 +70,10 @@ const Organization: EssentialProperties = {
         contactPoint: AUTO,
         telephone: AUTO,
         areaServed: "Country/State/City",
+    },
+    recommendedByGoogle: {
+        review: AUTO,
+        aggregateRating: AUTO
     },
     essential: {
         address: AUTO,
@@ -207,20 +211,71 @@ const VideoObject: EssentialProperties = {
     }
 };
 
+const Place: EssentialProperties = {
+    id: "http://schema.org/Place",
+    recommendedByGoogle: {
+        aggregateRating: AUTO,
+        address: AUTO,
+        geo: {
+            [JSONLD_TYPE]: "http://schema.org/GeoCoordinates",
+            latitude: AUTO,
+            longitude: AUTO
+        },
+        url: AUTO,
+        review: AUTO,
+        openingHoursSpecification: AUTO
+    }
+};
+
+const LocalBusiness: EssentialProperties = {
+    id: "http://schema.org/LocalBusiness",
+    requiredByGoogle: {
+        [JSONLD_ID]: "Globally unique ID of the specific business location in the form of a URL. If the business has multiple locations, make sure the @id is unique for each location.",
+        name: AUTO,
+        address: AUTO
+    },
+    recommendedByGoogle: {
+        department: AUTO
+    }
+};
+
+const OpeningHoursSpecification: EssentialProperties = {
+    id: "http://schema.org/OpeningHoursSpecification",
+    recommendedByGoogle: {
+        closes: AUTO,
+        dayOfWeek: AUTO,
+        opens: AUTO,
+        validFrom: AUTO,
+        validThrough: AUTO
+    }
+};
+
+const GeoCoordinates: EssentialProperties = {
+    id: "http://schema.org/GeoCoordinates",
+    recommendedByGoogle: {
+        latitude: AUTO,
+        longitude: AUTO
+    }
+};
+
 export const essentialPropertiesMap = new Map<string, EssentialProperties>([
-    ["http://schema.org/Thing", Thing],
-    ["http://schema.org/Article", Article],
-    ["http://schema.org/CreativeWork", CreativeWork],
-    ["http://schema.org/Person", Person],
-    ["http://schema.org/Organization", Organization],
-    ["http://schema.org/ContactPoint", ContactPoint],
-    ["http://schema.org/Product", Product],
-    ["http://schema.org/Book", Book],
-    ["http://schema.org/AggregateOffer", AggregateOffer],
-    ["http://schema.org/Offer", Offer],
-    ["http://schema.org/Review", Review],
-    ["http://schema.org/AggregateRating", AggregateRating],
-    ["http://schema.org/Rating", Rating],
-    ["http://schema.org/MediaObject", MediaObject],
-    ["http://schema.org/VideoObject", VideoObject],
+    [Thing.id, Thing],
+    [Article.id, Article],
+    [CreativeWork.id, CreativeWork],
+    [Person.id, Person],
+    [Organization.id, Organization],
+    [ContactPoint.id, ContactPoint],
+    [Product.id, Product],
+    [Book.id, Book],
+    [AggregateOffer.id, AggregateOffer],
+    [Offer.id, Offer],
+    [Review.id, Review],
+    [AggregateRating.id, AggregateRating],
+    [Rating.id, Rating],
+    [MediaObject.id, MediaObject],
+    [VideoObject.id, VideoObject],
+    [Place.id, Place],
+    [LocalBusiness.id, LocalBusiness],
+    [OpeningHoursSpecification.id, OpeningHoursSpecification],
+    [GeoCoordinates.id, GeoCoordinates]
 ]);

@@ -1,4 +1,4 @@
 import SchemaGenerator from "./SchemaGenerator";
 
-const generator = new SchemaGenerator("./schema.jsonld", "./src/schema.ts");
+const generator = new SchemaGenerator("./all-layers.jsonld", "./src/Schema.ts");
 generator.generate();
