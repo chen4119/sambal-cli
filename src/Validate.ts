@@ -1,4 +1,4 @@
-import {schemaMap} from "./Schema";
+import {getSchemaOrgType, isSchemaOrgType} from "sambal-jsonld";
 import {essentialPropertiesMap, EssentialProperties} from "./Essentials";
 import TypeGenerator from "./TypeGenerator";
 import {JSONLD_ID, JSONLD_TYPE} from "./Constants";
@@ -16,7 +16,7 @@ function validateEssentialProperties() {
 
 function getAllTypeProperties(id: string) {
     const typeProperties = {};
-    const typeSchema = schemaMap.get(id.toLowerCase());
+    const typeSchema = getSchemaOrgType(id);
     TypeGenerator.addSchemaProperties(typeProperties, typeSchema);
     TypeGenerator.traverseParentHierarchy(typeSchema, (parentId, parentSchema) => {
         TypeGenerator.addSchemaProperties(typeProperties, parentSchema);

@@ -1,4 +1,4 @@
-import {schemaMap} from "./Schema";
+import {getSchemaOrgType, isSchemaOrgType} from "sambal-jsonld";
 import {essentialPropertiesMap, EssentialProperties} from "./Essentials";
 import {
     SCHEMA_TEXT, 
@@ -34,7 +34,7 @@ class TypeGenerator {
     }
 
     generate() {
-        const typeSchema = schemaMap.get(this.typeId.toLowerCase());
+        const typeSchema = getSchemaOrgType(this.typeId);
         TypeGenerator.addSchemaProperties(this.typeProperties, typeSchema);
         TypeGenerator.traverseParentHierarchy(typeSchema, (parentId, parentSchema) => {
             TypeGenerator.addSchemaProperties(this.typeProperties, parentSchema);
@@ -104,7 +104,7 @@ class TypeGenerator {
         const schemaParents = schema[SAMBAL_PARENT];
         if (schemaParents) {
             for (const parentId of schemaParents) {
-                const parentSchema = schemaMap.get(parentId.toLowerCase());
+                const parentSchema = getSchemaOrgType(parentId);
                 callbackFn(parentId, parentSchema);
                 this.traverseParentHierarchy(parentSchema, callbackFn);
             }
@@ -166,9 +166,8 @@ class TypeGenerator {
             case SCHEMA_URL:
                 return "url";
             default:
-                const typeSchemaId = type.toLowerCase();
-                if (schemaMap.has(typeSchemaId)) {
-                    const typeSchema = schemaMap.get(typeSchemaId);
+                if (isSchemaOrgType(type)) {
+                    const typeSchema = getSchemaOrgType(type);
                     if (typeSchema[SAMBAL_VALUES]) {
                         return typeSchema[SAMBAL_VALUES];
                     } else {

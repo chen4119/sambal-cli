@@ -1,6 +1,6 @@
 import program from "commander";
 import {version} from "../package.json";
-import {schemaMap} from "./Schema";
+import {getSchemaOrgType, isSchemaOrgType} from "sambal-jsonld";
 import TypeGenerator from "./TypeGenerator";
 import {SCHEMA_PREFIX, SAMBAL_ID} from "./Constants";
 
@@ -8,9 +8,9 @@ import {SCHEMA_PREFIX, SAMBAL_ID} from "./Constants";
 function makeSchema(type, output, cmd) {
     console.log(type);
     console.log(output);
-    const id = `${SCHEMA_PREFIX}/${type}`.toLowerCase();
-    if (schemaMap.has(id)) {
-        const schema = schemaMap.get(id);
+    const id = `${SCHEMA_PREFIX}/${type}`;
+    if (isSchemaOrgType(id)) {
+        const schema = getSchemaOrgType(id);
         const gen = new TypeGenerator(schema[SAMBAL_ID], Boolean(cmd.full));
         console.log(gen.generate());
     } else {
