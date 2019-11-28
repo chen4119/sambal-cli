@@ -1,6 +1,6 @@
 {
     "name": "sambal-cli",
-    "version": "0.0.11",
+    "version": "0.0.12",
     "description": "Sambal CLI tools",
     "main": "dist/src/index.js",
     "repository": {
@@ -9,6 +9,10 @@
     },
     "author": "Wan Chun Chen",
     "license": "MIT",
+    "files": [
+        "dist",
+        "bin"
+    ],
     "keywords": [
         "schema.org",
         "semantic web",
@@ -21,7 +25,7 @@
         "sambal": "./bin/sambal"
     },
     "scripts": {
-        "start": "ts-node src/index.ts schema person ./test.yml",
+        "start": "ts-node src/index.ts schema.org person test.yml",
         "test": "ts-node src/index.ts",
         "help": "ts-node src/index.ts --help",
         "validate": "ts-node src/Validate.ts",

@@ -29,10 +29,16 @@ function makeSchema(type, output, cmd) {
 }
 
 program
-.command(`schema <type> <output>`)
-.description('Create schema.org json or markdown file.  -f, --full for full schema')
+.command(`schema.org <type> <output>`)
+.description('Create schema.org json or yaml file.  -f, --full for full schema')
 .option("-f, --full", "Full schema")
 .action(makeSchema);
+
+program
+.command('*')
+.action(function(env){
+    console.error('Unrecognized command.  Try "sambal schema.org person person.yml"');
+});
 
 program
 .version(version)
