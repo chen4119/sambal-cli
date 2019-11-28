@@ -1,7 +1,6 @@
-import {getSchemaOrgType, isSchemaOrgType} from "sambal-jsonld";
+import {getSchemaOrgType, isSchemaOrgType, JSONLD_ID, JSONLD_TYPE} from "sambal-jsonld";
 import {essentialPropertiesMap, EssentialProperties} from "./Essentials";
 import TypeGenerator from "./TypeGenerator";
-import {JSONLD_ID, JSONLD_TYPE} from "./Constants";
 
 function validateEssentialProperties() {
     for (const key of essentialPropertiesMap.keys()) {

@@ -1,18 +1,28 @@
 import program from "commander";
 import {version} from "../package.json";
-import {getSchemaOrgType, isSchemaOrgType} from "sambal-jsonld";
+import {getSchemaOrgType, isSchemaOrgType, SCHEMA_CONTEXT, SAMBAL_ID} from "sambal-jsonld";
 import TypeGenerator from "./TypeGenerator";
-import {SCHEMA_PREFIX, SAMBAL_ID} from "./Constants";
-
+import fs from "fs";
+import path from "path";
+import yaml from "js-yaml";
 
 function makeSchema(type, output, cmd) {
-    console.log(type);
-    console.log(output);
-    const id = `${SCHEMA_PREFIX}/${type}`;
+    const ext = path.extname(output).toLowerCase();
+    if (ext !== ".yaml" && ext !== ".yml" && ext !== ".json") {
+        console.error(`Unrecognized file extension ${ext}.  Only yaml or json output format supported`);
+        return;
+    }
+    const id = `${SCHEMA_CONTEXT}/${type}`;
     if (isSchemaOrgType(id)) {
         const schema = getSchemaOrgType(id);
         const gen = new TypeGenerator(schema[SAMBAL_ID], Boolean(cmd.full));
-        console.log(gen.generate());
+        if (ext === ".yaml" || ext === ".yml") {
+            fs.writeFileSync(output, String(yaml.safeDump(gen.generate())), "utf-8");
+            console.log(`Created schema.org ${type} at ${output}`);
+        } else if (ext === ".json") {
+            fs.writeFileSync(output, JSON.stringify(gen.generate()), "utf-8");
+            console.log(`Created schema.org ${type} at ${output}`);
+        }
     } else {
         console.error(`${type} not found`);
     }
@@ -27,3 +37,7 @@ program
 program
 .version(version)
 .parse(process.argv);
+
+if (!program.args.length) {
+    program.help();
+}

@@ -1,6 +1,7 @@
-export const SCHEMA_PREFIX = "http://schema.org";
+// export const SCHEMA_PREFIX = "http://schema.org";
 export const AUTO = "auto";
 
+/*
 export const SAMBAL_ID = "_id";
 export const SAMBAL_NAME = "_name";
 export const SAMBAL_PARENT = "_parent";
@@ -25,3 +26,4 @@ export const SCHEMA_DATETIME = `${SCHEMA_PREFIX}/DateTime`;
 export const SCHEMA_TIME = `${SCHEMA_PREFIX}/Time`;
 export const SCHEMA_BOOL = `${SCHEMA_PREFIX}/Boolean`;
 export const SCHEMA_URL = `${SCHEMA_PREFIX}/URL`;
+*/

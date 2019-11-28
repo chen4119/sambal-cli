@@ -1,4 +1,5 @@
-import {AUTO, JSONLD_ID, JSONLD_TYPE} from "./Constants";
+import {AUTO} from "./Constants";
+import {JSONLD_ID, JSONLD_TYPE} from "sambal-jsonld";
 
 export type EssentialProperties = {
     id: string,
@@ -109,13 +110,12 @@ const Product: EssentialProperties = {
         sku: "Stock Keeping Unit"
     },
     essential: {
-        productId: "Product unique identifier",
+        productID: "Product unique identifier",
         award: AUTO,
         category: AUTO,
         model: AUTO,
-        hasProductReturnPolicy: AUTO,
         isRelatedTo: AUTO,
-        iSimilarTo: AUTO
+        isSimilarTo: AUTO
     }
 };
 
@@ -179,9 +179,6 @@ const Rating: EssentialProperties = {
     recommendedByGoogle: {
         bestRating: AUTO,
         worstRating: AUTO
-    },
-    essential: {
-        ratingExplanation: AUTO
     }
 };
 

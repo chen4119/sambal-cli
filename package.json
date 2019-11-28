@@ -1,6 +1,6 @@
 {
     "name": "sambal-cli",
-    "version": "0.0.10",
+    "version": "0.0.11",
     "description": "Sambal CLI tools",
     "main": "dist/src/index.js",
     "repository": {
@@ -10,12 +10,9 @@
     "author": "Wan Chun Chen",
     "license": "MIT",
     "keywords": [
-        "web components",
-        "lit-html",
-        "litelement",
-        "customElements",
-        "static site generator",
-        "data partition"
+        "schema.org",
+        "semantic web",
+        "json-ld"
     ],
     "engines": {
         "node": ">=8.0.0"
@@ -24,22 +21,24 @@
         "sambal": "./bin/sambal"
     },
     "scripts": {
-        "start": "ts-node src/generator.ts",
-        "test": "ts-node src/index.ts schema howto ./test.json --full",
+        "start": "ts-node src/index.ts schema person ./test.yml",
+        "test": "ts-node src/index.ts",
         "help": "ts-node src/index.ts --help",
         "validate": "ts-node src/Validate.ts",
-        "build": "tsc"
+        "build": "npm run clean && tsc",
+        "clean": "rimraf ./dist"
     },
     "dependencies": {
         "commander": "2.20.0",
         "lodash": "4.17.11",
         "js-yaml": "3.12.0",
-        "sambal-jsonld": "0.0.1"
+        "sambal-jsonld": "0.0.10"
     },
     "devDependencies": {
         "@types/node": "10.12.10",
         "@types/js-yaml": "3.11.2",
         "@types/lodash": "4.14.118",
+        "rimraf": "3.0.0",
         "tslint": "5.11.0",
         "ts-node": "7.0.1",
         "typescript": "3.5.3"
