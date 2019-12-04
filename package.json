@@ -1,6 +1,6 @@
 {
     "name": "sambal-cli",
-    "version": "0.0.12",
+    "version": "0.0.19",
     "description": "Sambal CLI tools",
     "main": "dist/src/index.js",
     "repository": {
@@ -9,10 +9,6 @@
     },
     "author": "Wan Chun Chen",
     "license": "MIT",
-    "files": [
-        "dist",
-        "bin"
-    ],
     "keywords": [
         "schema.org",
         "semantic web",

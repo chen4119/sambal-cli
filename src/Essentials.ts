@@ -18,7 +18,7 @@ const Thing: EssentialProperties = {
     essential: {
         identifier: "Unique identifier or URL",
         sameAs: AUTO,
-        url: "Will be auto populated by Sambal"
+        url: AUTO
     }
 };
 
