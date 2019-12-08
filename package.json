@@ -22,22 +22,27 @@
     },
     "scripts": {
         "start": "ts-node src/index.ts schema.org person test.yml",
-        "test": "ts-node src/index.ts",
-        "help": "ts-node src/index.ts --help",
+        "test": "ts-node src/index.ts run renderPage blogposts/*.md",
+        "serve": "ts-node src/index.ts serve renderPage blogposts/*.md",
         "validate": "ts-node src/Validate.ts",
         "build": "npm run clean && tsc",
         "clean": "rimraf ./dist"
     },
     "dependencies": {
+        "chokidar": "3.3.0",
         "commander": "2.20.0",
-        "lodash": "4.17.11",
-        "js-yaml": "3.12.0",
-        "sambal-jsonld": "0.0.10"
+        "parcel-bundler": "1.12.4",
+        "prettier": "1.18.2",
+        "sambal-ssg": "0.0.19"
     },
     "devDependencies": {
+        "@types/cheerio": "0.22.12",
         "@types/node": "10.12.10",
         "@types/js-yaml": "3.11.2",
         "@types/lodash": "4.14.118",
+        "@types/parcel-bundler": "1.12.1",
+        "@types/prettier": "1.18.3",
+        "@types/shelljs": "0.8.5",
         "rimraf": "3.0.0",
         "tslint": "5.11.0",
         "ts-node": "7.0.1",

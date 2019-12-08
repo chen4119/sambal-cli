@@ -23,6 +23,9 @@
     },
     "include": [
       "src/index.ts"
+    ],
+    "exclude": [
+        "src/sambal.config.js"
     ]
 }
   
