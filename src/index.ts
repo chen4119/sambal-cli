@@ -12,7 +12,7 @@ import {clean, write} from "./Writer";
 import {bundle, serveBundle} from "./Bundler";
 import chokidar from "chokidar";
 
-const config = require("./sambal.config.js");
+const config = require(`${process.cwd()}/sambal.config.js`);
 const START_SERVER_DELAY = 1000;
 
 function makeSchema(type, output, cmd) {

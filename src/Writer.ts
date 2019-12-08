@@ -18,7 +18,6 @@ export async function write(dest: string, content: string) {
     if (ext === '.html' || ext === '.htm') {
         output = path.normalize(`${CACHE_PATH}/${dest}`);
     }
-    console.log(`Writing ${output}`);
     await ensureDirectoryExistThenWriteFile(output, content);
     return output;
 }

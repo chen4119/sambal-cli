@@ -1,8 +1,9 @@
 import Bundler, {ParcelOptions} from "parcel-bundler";
-import {CACHE_PATH, PARCEL_CACHE_FOLDER} from "./Constants";
+import path from "path";
+import {CACHE_PATH, PARCEL_CACHE_FOLDER, OUTPUT_PATH} from "./Constants";
 
 const DEFAULT_OPTIONS: ParcelOptions = {
-    outDir: './public', // The out directory to put the build files in, defaults to dist
+    outDir: OUTPUT_PATH, // The out directory to put the build files in, defaults to dist
     outFile: 'index.html', // The name of the outputFile
     publicUrl: './', // The url to serve on, defaults to '/'
     watch: false, // Whether to watch the files and rebuild them on change, defaults to process.env.NODE_ENV !== 'production'
@@ -22,9 +23,15 @@ const DEFAULT_OPTIONS: ParcelOptions = {
 };
 
 export async function bundle(src: string, dest: string) {
+    console.log("src: " + src);
+    const outDir = path.normalize(`${OUTPUT_PATH}/${path.dirname(dest)}`);
+    const outFile = path.basename(dest);
+    console.log("ourdir: " + outDir);
+    console.log("outFile: " + outFile);
     const bundler = new Bundler(src, {
         ...DEFAULT_OPTIONS,
-        outFile: dest
+        outDir: outDir,
+        outFile: outFile
     });
     await bundler.bundle();
 }

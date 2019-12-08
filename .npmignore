@@ -1,4 +1,8 @@
 src/
 tsconfig.json
 tslint.json
+.sambal/
+public/
 *.yml
+*.css
+*.md
