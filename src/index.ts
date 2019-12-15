@@ -1,18 +1,23 @@
 import program from "commander";
 import {version} from "../package.json";
 import {getSchemaOrgType, isSchemaOrgType, SCHEMA_CONTEXT, SAMBAL_ID} from "sambal-jsonld";
-import {loadContent, hydrateJsonLd} from "sambal-ssg";
 import TypeGenerator from "./TypeGenerator";
 import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
-import {Observer, Observable, Subject, ConnectableObservable, Subscriber} from "rxjs";
-import {multicast} from "rxjs/operators";
-import {clean, write} from "./Writer";
-import {bundle, serveBundle} from "./Bundler";
+import {clean} from "./Writer";
 import chokidar from "chokidar";
+import {OUTPUT_PATH} from "./Constants";
+import {Sambal} from "sambal";
+import Router from "./Router";
+import { forkJoin } from "rxjs";
 
 const config = require(`${process.cwd()}/sambal.config.js`);
+const sambal = new Sambal(config.contentFolder, {
+    base: config.base,
+    collections: config.collections
+});
+const router = new Router();
 const START_SERVER_DELAY = 1000;
 
 function makeSchema(type, output, cmd) {
@@ -37,30 +42,7 @@ function makeSchema(type, output, cmd) {
     }
 }
 
-function route(router: ((props: any) => string), isBundle: boolean): Observer<any> {
-    return {
-        next: async (d) => {
-            const data = d.data;
-            const html = d.html.html();
-            const dest = router(data);
-            const output = await write(dest, html);
-            if (isBundle) {
-                await bundle(output, dest);
-            }
-        },
-        error: (err) => {
-            handleError(err);
-        },
-        complete: () => {
-            
-        }
-    };
-}
-
-function handleError(error) {
-    console.error(error);
-}
-
+/*
 function startDevServer(files: string[], subscriber: Subscriber<unknown>) {
     const watcher = chokidar.watch(files);
     watcher.on('change', async (path) => {
@@ -72,50 +54,38 @@ function startDevServer(files: string[], subscriber: Subscriber<unknown>) {
         console.log("starting server");
         serveBundle();
     }, START_SERVER_DELAY);
-}
+}*/
 
-async function iterateFiles(files: string[], subscriber: Subscriber<unknown>, isServe: boolean) {
-    for (let i = 0; i < files.length; i++) {
-        const content = await loadContent(files[i]);
-        subscriber.next(content);
-    }
-    if (isServe) {
-        startDevServer(files, subscriber);
+async function build() {
+    console.log(`Cleaning ${OUTPUT_PATH}`);
+    clean(OUTPUT_PATH);
+    console.log("Indexing content");
+    await indexContent();
+    if (config.route) {
+        config.route({
+            renderPage: router.renderPage.bind(router),
+            renderCollection: router.renderCollection.bind(router)
+        });
     } else {
-        subscriber.complete();
+        console.error("No route function defined in sambal.config.js");
     }
-}
-
-function filesObs(files: string[], isServe: boolean): ConnectableObservable<any> {
-    return new Observable(subscriber => {
-        iterateFiles(files, subscriber, isServe);
-    })
-    .pipe(hydrateJsonLd())
-    .pipe(multicast(() => new Subject())) as ConnectableObservable<any>;
-}
-
-function run(task, files, cmd) {
-    if (config[task]) {
-        clean();
-        const sourceObs: ConnectableObservable<any> = filesObs(files, false);
-        const resultObs: Observable<any> = config[task].call(null, sourceObs);
-        resultObs.subscribe(route(config["route"], true));
-        sourceObs.connect();
+    const collectionObsList = [];
+    for (const collectionName of router.collectionsToRun) {
+        const obs = sambal.collection(collectionName);
+        collectionObsList.push(obs);
+        obs.subscribe(router.collection(collectionName));
+    }
+    if (collectionObsList.length > 0) {
+        forkJoin(collectionObsList).subscribe(() => {
+            sambal.collection("main").subscribe(router.pages());
+        });
     } else {
-        console.log(`${task} not found`);
+        sambal.collection("main").subscribe(router.pages());
     }
 }
 
-function serve(task, files, cmd) {
-    if (config[task]) {
-        clean();
-        const sourceObs: ConnectableObservable<any> = filesObs(files, true);
-        const resultObs: Observable<any> = config[task].call(null, sourceObs);
-        resultObs.subscribe(route(config["route"], false));
-        sourceObs.connect();
-    } else {
-        console.log(`${task} not found`);
-    }
+async function indexContent() {
+    await sambal.indexContent();
 }
 
 program
@@ -125,14 +95,14 @@ program
 .action(makeSchema);
 
 program
-.command(`run <task> [files...]`)
-.description('Run specified task')
-.action(run);
+.command(`build`)
+.description('Generate website')
+.action(build);
 
 program
-.command(`serve <task> [files...]`)
-.description('Watch for file change to trigger specified task')
-.action(serve);
+.command(`index`)
+.description('Index content')
+.action(indexContent);
 
 program
 .command('*')

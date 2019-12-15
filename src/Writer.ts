@@ -3,20 +3,16 @@ import crypto from "crypto";
 import shelljs from "shelljs";
 import prettier from "prettier";
 import fs from "fs";
-import {Observer} from "rxjs";
-import {bundle} from "./Bundler";
-import {CACHE_PATH, PARCEL_CACHE_FOLDER, OUTPUT_PATH} from "./Constants";
 
-export function clean() {
-    shelljs.rm("-rf", `${CACHE_PATH}/*`, `!${PARCEL_CACHE_FOLDER}`);
-    shelljs.rm("-rf", OUTPUT_PATH);
+export function clean(folder: string) {
+    shelljs.rm("-rf", folder);
 }
 
 export async function write(dest: string, content: string) {
     const ext = path.extname(dest).toLowerCase();
-    let output = path.normalize(`${CACHE_PATH}/${dest}/index.html`);
+    let output = path.normalize(`${dest}/index.html`);
     if (ext === '.html' || ext === '.htm') {
-        output = path.normalize(`${CACHE_PATH}/${dest}`);
+        output = path.normalize(`${dest}`);
     }
     await ensureDirectoryExistThenWriteFile(output, content);
     return output;

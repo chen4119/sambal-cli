@@ -64,22 +64,17 @@ export async function build(input: string, dest: string) {
             postcss({
                 plugins: [],
                 minimize: true,
-                extract: true
+                extract: false
             })
         ]
     });
 
     // const result: RollupOutput = await bundle.generate({format: 'esm'});
     const output = path.normalize(`${dest}/${path.dirname(input)}`);
-    console.log(output);
     const result: RollupOutput = await bundle.write({
         dir: output,
-        format: 'umd'
-        // name: 'dfois.css'
-        // entryFileNames: '[name]-[hash].js'
+        format: 'umd',
+        entryFileNames: '[name]-[hash].js'
     });
-    return {
-        src: input,
-        dest: `${output}/${result.output[0].fileName}`
-    };
+    return `${output}/${result.output[0].fileName}`;
 }
