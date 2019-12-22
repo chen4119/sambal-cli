@@ -8,6 +8,7 @@ export function clean(folder: string) {
     shelljs.rm("-rf", folder);
 }
 
+/*
 export async function write(dest: string, content: string) {
     const ext = path.extname(dest).toLowerCase();
     let output = path.normalize(`${dest}/index.html`);
@@ -33,4 +34,4 @@ async function writeFile(output: string, content: string): Promise<void> {
 async function ensureDirectoryExistThenWriteFile(output: string, content: string) {
     shelljs.mkdir("-p", path.dirname(output));
     return writeFile(output, content);
-}
+}*/

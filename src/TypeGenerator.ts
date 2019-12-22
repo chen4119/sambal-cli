@@ -1,4 +1,4 @@
-import {essentialPropertiesMap, EssentialProperties} from "./Essentials";
+import {essentialPropertiesMap, EssentialProperties, AUTO} from "./schemaEssentials";
 import {
     SCHEMA_TEXT, 
     SCHEMA_NUMBER, 
@@ -15,7 +15,6 @@ import {
     getSchemaOrgType,
     isSchemaOrgType
 } from "sambal-jsonld";
-import {AUTO} from "./Constants";
 
 class TypeGenerator {
     private typeProperties = {};

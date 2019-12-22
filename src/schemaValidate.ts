@@ -1,5 +1,5 @@
 import {getSchemaOrgType, isSchemaOrgType, JSONLD_ID, JSONLD_TYPE} from "sambal-jsonld";
-import {essentialPropertiesMap, EssentialProperties} from "./Essentials";
+import {essentialPropertiesMap, EssentialProperties} from "./schemaEssentials";
 import TypeGenerator from "./TypeGenerator";
 
 function validateEssentialProperties() {

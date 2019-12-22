@@ -5,19 +5,13 @@ import TypeGenerator from "./TypeGenerator";
 import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
-import {clean} from "./Writer";
+import {clean} from "./utils";
 import chokidar from "chokidar";
-import {OUTPUT_PATH} from "./Constants";
-import {Sambal} from "sambal";
-import Router from "./Router";
-import { forkJoin } from "rxjs";
+import {LinkedDataStore, OUTPUT_FOLDER} from "sambal";
+import Builder from "./Builder";
 
 const config = require(`${process.cwd()}/sambal.config.js`);
-const sambal = new Sambal(config.contentFolder, {
-    base: config.base,
-    collections: config.collections
-});
-const router = new Router();
+const store = new LinkedDataStore({contentPath: config.contentPath, collections: config.collections});
 const START_SERVER_DELAY = 1000;
 
 function makeSchema(type, output, cmd) {
@@ -57,35 +51,15 @@ function startDevServer(files: string[], subscriber: Subscriber<unknown>) {
 }*/
 
 async function build() {
-    console.log(`Cleaning ${OUTPUT_PATH}`);
-    clean(OUTPUT_PATH);
-    console.log("Indexing content");
-    await indexContent();
-    if (config.route) {
-        config.route({
-            renderPage: router.renderPage.bind(router),
-            renderCollection: router.renderCollection.bind(router)
-        });
-    } else {
-        console.error("No route function defined in sambal.config.js");
-    }
-    const collectionObsList = [];
-    for (const collectionName of router.collectionsToRun) {
-        const obs = sambal.collection(collectionName);
-        collectionObsList.push(obs);
-        obs.subscribe(router.collection(collectionName));
-    }
-    if (collectionObsList.length > 0) {
-        forkJoin(collectionObsList).subscribe(() => {
-            sambal.collection("main").subscribe(router.pages());
-        });
-    } else {
-        sambal.collection("main").subscribe(router.pages());
-    }
+    console.log(`Cleaning ${OUTPUT_FOLDER}`);
+    clean(OUTPUT_FOLDER);
+    const builder = new Builder(store, config.route);
+    await builder.start();
 }
 
 async function indexContent() {
-    await sambal.indexContent();
+    console.log("I am here");
+    await store.indexContent();
 }
 
 program

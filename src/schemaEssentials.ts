@@ -1,5 +1,6 @@
-import {AUTO} from "./Constants";
 import {JSONLD_ID, JSONLD_TYPE} from "sambal-jsonld";
+
+export const AUTO = "auto";
 
 export type EssentialProperties = {
     id: string,
