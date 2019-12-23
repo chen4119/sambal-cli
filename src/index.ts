@@ -58,7 +58,6 @@ async function build() {
 }
 
 async function indexContent() {
-    console.log("I am here");
     await store.indexContent();
 }
 

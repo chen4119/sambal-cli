@@ -3,6 +3,9 @@ tsconfig.json
 tslint.json
 .sambal/
 public/
+js/
+content/
+css/
 *.yml
 *.css
 *.md
