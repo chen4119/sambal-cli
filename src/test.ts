@@ -2,7 +2,8 @@
 const {render, template} = require("sambal");
 const {from} = require("rxjs");
 const {map} = require("rxjs/operators");
-const {bundle} = require("./operators/bundle");
+import {build} from "./webpack";
+import path from "path";
 
 const renderBlogPost = ({headline}) => {
     return template`
@@ -32,6 +33,10 @@ function renderPage(obs) {
 }
 
 
+(async () => {
+    const results = await build("./js/index.js", path.resolve(process.cwd(), "public"));
+    console.log(results);
+})();
 
-from([{headline: "hello world"}])
-.pipe(render(renderBlogPost))
+// from([{headline: "hello world"}])
+// .pipe(render(renderBlogPost))

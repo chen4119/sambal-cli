@@ -1,7 +1,8 @@
 import {Observable, from} from "rxjs";
 import {mergeAll} from "rxjs/operators";
-import {Packager, LinkedDataStore, OUTPUT_FOLDER} from "sambal";
-import {build} from "./Rollup";
+import {Packager, LinkedDataStore} from "sambal";
+import {build} from "./webpack";
+import path from "path";
 
 class Builder {
     private packager: Packager;
@@ -9,8 +10,9 @@ class Builder {
         
     }
 
-    async rollup(src: string) {
-        return await build(src, OUTPUT_FOLDER);
+    async webpack(src: string, destFolder: string, isModule: boolean) {
+        const outputPath: string = path.resolve(process.cwd(), destFolder);
+        return await build(src, outputPath);
     }
 
     async start() {
@@ -21,7 +23,7 @@ class Builder {
         } else {
             source = obs$;
         }
-        this.packager = new Packager(source, {bundle: this.rollup});
+        this.packager = new Packager(source, {bundle: this.webpack});
         await this.packager.deliver();
     }
 }
