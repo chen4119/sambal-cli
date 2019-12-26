@@ -14,7 +14,7 @@ const renderBlogPost = ({headline}) => {
             </head>
             <body>
                 <h1 class="text-primary">${headline}</h1>
-
+                <i class="fab fa-github-square"></i>
                 <pre class="language-md"><code class="language-md"><span class="token hr punctuation">---</span>
 headline: My first blogpost!
 description: Starting my blog with Sambal

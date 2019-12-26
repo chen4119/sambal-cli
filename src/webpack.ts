@@ -44,11 +44,13 @@ const WEBPACK_CONFIG = {
 export async function build(input: string, dest: string) {
     return new Promise<string[]>((resolve, reject) => {
         const output = path.normalize(`${dest}/${path.dirname(input)}`);
+        console.log(output);
         const compiler = webpack({
             mode: "production",
             entry: input,
             output: {
                 path: output,
+                publicPath: `/${path.dirname(input)}/`,
                 filename: "[name]-[hash].js",
                 libraryTarget: "umd"
             },
@@ -72,7 +74,23 @@ export async function build(input: string, dest: string) {
             if (stats.hasWarnings()) {
                 console.warn(info.warnings);
             }
-            resolve(info.assets.map(asset => path.join(path.dirname(input), asset.name)));
+            for (const asset of info.assets) {
+                const entryAsset = asset.chunks.filter(chunkId => isEntryChunk(info.chunks, chunkId));
+                if (entryAsset.length === 1) {
+                    resolve([`/${path.join(path.dirname(input), asset.name)}`]);
+                    return;
+                }
+            }
+            reject("No entry asset found"); // Should not happen
         });
     });
+}
+
+function isEntryChunk(chunks, chunkId) {
+    for (const chunk of chunks) {
+        if (chunk.id === chunkId && chunk.entry) {
+            return true;
+        }
+    }
+    return false;
 }
