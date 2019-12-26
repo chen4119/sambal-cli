@@ -44,7 +44,6 @@ const WEBPACK_CONFIG = {
 export async function build(input: string, dest: string) {
     return new Promise<string[]>((resolve, reject) => {
         const output = path.normalize(`${dest}/${path.dirname(input)}`);
-        console.log(output);
         const compiler = webpack({
             mode: "production",
             entry: input,

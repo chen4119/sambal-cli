@@ -24,7 +24,9 @@ class Builder {
             source = obs$;
         }
         this.packager = new Packager(source, {bundle: this.webpack});
-        await this.packager.deliver();
+        const deliveryFuture = this.packager.deliver();
+        this.store.start();
+        await deliveryFuture;
     }
 }
 
