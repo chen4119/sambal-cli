@@ -3,6 +3,7 @@ import {mergeAll} from "rxjs/operators";
 import {Packager, LinkedDataStore} from "sambal";
 import {build} from "./webpack";
 import path from "path";
+import {flattenDeep} from "lodash";
 
 class Builder {
     private packager: Packager;
@@ -17,12 +18,7 @@ class Builder {
 
     async start() {
         const obs$ = this.route(this.store);
-        let source;
-        if (Array.isArray(obs$)) {
-            source = from(obs$).pipe(mergeAll());
-        } else {
-            source = obs$;
-        }
+        const source = from(flattenDeep([obs$])).pipe(mergeAll());
         this.packager = new Packager(source, {bundle: this.webpack});
         const deliveryFuture = this.packager.deliver();
         this.store.start();

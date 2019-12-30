@@ -5,8 +5,8 @@ import TypeGenerator from "./TypeGenerator";
 import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
-import {clean} from "./utils";
 import chokidar from "chokidar";
+import shelljs from "shelljs";
 import {LinkedDataStore, OUTPUT_FOLDER} from "sambal";
 import Builder from "./Builder";
 
@@ -59,6 +59,10 @@ async function build() {
 
 async function indexContent() {
     await store.indexContent();
+}
+
+function clean(folder: string) {
+    shelljs.rm("-rf", folder);
 }
 
 program
