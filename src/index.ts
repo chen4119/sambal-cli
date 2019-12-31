@@ -53,7 +53,7 @@ function startDevServer(files: string[], subscriber: Subscriber<unknown>) {
 async function build() {
     console.log(`Cleaning ${OUTPUT_FOLDER}`);
     clean(OUTPUT_FOLDER);
-    const builder = new Builder(store, config.route);
+    const builder = new Builder(store, config.route$);
     await builder.start();
 }
 

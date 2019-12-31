@@ -7,7 +7,7 @@ import {flattenDeep} from "lodash";
 
 class Builder {
     private packager: Packager;
-    constructor(private store: LinkedDataStore, private route: (store: LinkedDataStore) => Observable<any> | Observable<any>[]) {
+    constructor(private store: LinkedDataStore, private route$: (store: LinkedDataStore) => Promise<Observable<any> | Observable<any>[]>) {
         
     }
 
@@ -17,7 +17,7 @@ class Builder {
     }
 
     async start() {
-        const obs$ = this.route(this.store);
+        const obs$ = await this.route$(this.store);
         const source = from(flattenDeep([obs$])).pipe(mergeAll());
         this.packager = new Packager(source, {bundle: this.webpack});
         const deliveryFuture = this.packager.deliver();
