@@ -11,7 +11,7 @@ import {LinkedDataStore, OUTPUT_FOLDER} from "sambal";
 import Builder from "./Builder";
 
 const config = require(`${process.cwd()}/sambal.config.js`);
-const store = new LinkedDataStore({contentPath: config.contentPath, collections: config.collections});
+const store = new LinkedDataStore(config.host, {contentPath: config.contentPath, collections: config.collections});
 const START_SERVER_DELAY = 1000;
 
 function makeSchema(type, output, cmd) {
