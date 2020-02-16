@@ -1,6 +1,6 @@
 {
     "name": "sambal-cli",
-    "version": "0.0.27",
+    "version": "0.0.28",
     "description": "Sambal CLI tools",
     "main": "dist/src/index.js",
     "repository": {
@@ -12,7 +12,9 @@
     "keywords": [
         "schema.org",
         "semantic web",
-        "json-ld"
+        "json-ld",
+        "linked data",
+        "static site generator"
     ],
     "engines": {
         "node": ">=8.0.0"
@@ -25,7 +27,7 @@
         "schema": "ts-node src/index.ts schema.org person test.yml",
         "index": "ts-node src/index.ts index",
         "test": "ts-node src/test.ts",
-        "validate": "ts-node src/Validate.ts",
+        "validate": "ts-node src/schemaValidate.ts",
         "build": "npm run clean && tsc",
         "clean": "rimraf ./dist",
         "serve": "http-server -c-1 --p 8081"
@@ -38,8 +40,8 @@
         "commander": "2.20.0",
         "css-loader": "3.4.0",
         "file-loader": "5.0.2",
-        "sambal": "~0.0.24",
-        "sambal-jsonld": "~0.0.12",
+        "sambal": "~0.0.25",
+        "sambal-jsonld": "~0.0.13",
         "style-loader": "1.1.1",
         "url-loader": "3.0.0",
         "webpack": "4.41.4"

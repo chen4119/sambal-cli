@@ -1,6 +1,8 @@
 import webpack from "webpack";
 import path from "path";
+import {Logger} from "sambal";
 
+const log = new Logger({name: "Webpack"});
 const WEBPACK_CONFIG = {
     module: {
         rules: [
@@ -58,9 +60,9 @@ export async function build(input: string, dest: string) {
 
         compiler.run((err, stats) => {
             if (err) {
-                console.error(err.stack || err);
+                log.error(err.stack || err);
                 if (err.details) {
-                    console.error(err.details);
+                    log.error(err.details);
                 }
                 reject(err);
                 return;
@@ -71,7 +73,7 @@ export async function build(input: string, dest: string) {
                 return;
             }
             if (stats.hasWarnings()) {
-                console.warn(info.warnings);
+                log.warn(info.warnings);
             }
             for (const asset of info.assets) {
                 const entryAsset = asset.chunks.filter(chunkId => isEntryChunk(info.chunks, chunkId));

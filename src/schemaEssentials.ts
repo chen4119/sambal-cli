@@ -58,7 +58,6 @@ const Person: EssentialProperties = {
         email: AUTO,
         familyName: AUTO,
         follows: AUTO,
-        gender: AUTO,
         givenName: AUTO,
         knows: AUTO,
         nationality: AUTO,
@@ -106,7 +105,6 @@ const Product: EssentialProperties = {
         brand: AUTO,
         offers: AUTO,
         review: AUTO,
-        gtin: "Global Trade Item Number",
         mpn: "Manufacturer part Number",
         sku: "Stock Keeping Unit"
     },

@@ -7,9 +7,10 @@ import path from "path";
 import yaml from "js-yaml";
 import chokidar from "chokidar";
 import shelljs from "shelljs";
-import {LinkedDataStore, OUTPUT_FOLDER} from "sambal";
+import {LinkedDataStore, OUTPUT_FOLDER, Logger} from "sambal";
 import Builder from "./Builder";
 
+const log = new Logger({name: "cli"});
 const config = require(`${process.cwd()}/sambal.config.js`);
 const store = new LinkedDataStore(config.host, {contentPath: config.contentPath, collections: config.collections});
 const START_SERVER_DELAY = 1000;
@@ -17,7 +18,7 @@ const START_SERVER_DELAY = 1000;
 function makeSchema(type, output, cmd) {
     const ext = path.extname(output).toLowerCase();
     if (ext !== ".yaml" && ext !== ".yml" && ext !== ".json") {
-        console.error(`Unrecognized file extension ${ext}.  Only yaml or json output format supported`);
+        log.error(`Unrecognized file extension ${ext}.  Only yaml or json output format supported`);
         return;
     }
     const id = `${SCHEMA_CONTEXT}/${type}`;
@@ -26,13 +27,13 @@ function makeSchema(type, output, cmd) {
         const gen = new TypeGenerator(schema[SAMBAL_ID], Boolean(cmd.full));
         if (ext === ".yaml" || ext === ".yml") {
             fs.writeFileSync(output, String(yaml.safeDump(gen.generate())), "utf-8");
-            console.log(`Created schema.org ${type} at ${output}`);
+            log.info(`Created schema.org ${type} at ${output}`);
         } else if (ext === ".json") {
             fs.writeFileSync(output, JSON.stringify(gen.generate()), "utf-8");
-            console.log(`Created schema.org ${type} at ${output}`);
+            log.info(`Created schema.org ${type} at ${output}`);
         }
     } else {
-        console.error(`${type} not found`);
+        log.error(`${type} not found`);
     }
 }
 
@@ -51,7 +52,7 @@ function startDevServer(files: string[], subscriber: Subscriber<unknown>) {
 }*/
 
 async function build() {
-    console.log(`Cleaning ${OUTPUT_FOLDER}`);
+    log.info(`Cleaning ${OUTPUT_FOLDER}`);
     clean(OUTPUT_FOLDER);
     const builder = new Builder(store, config.route$);
     await builder.start();
@@ -84,7 +85,7 @@ program
 program
 .command('*')
 .action(function(env){
-    console.error('Unrecognized command.  sambal --help for more info');
+    log.error('Unrecognized command.  sambal --help for more info');
 });
 
 program
