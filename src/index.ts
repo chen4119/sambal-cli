@@ -55,11 +55,19 @@ async function build() {
     log.info(`Cleaning ${OUTPUT_FOLDER}`);
     clean(OUTPUT_FOLDER);
     const builder = new Builder(store, config.route$);
-    await builder.start();
+    try {
+        await builder.start();
+    } catch (e) {
+        log.error(e);
+    }
 }
 
 async function indexContent() {
-    await store.indexContent();
+    try {
+        await store.indexContent();
+    } catch (e) {
+        log.error(e);
+    }
 }
 
 function clean(folder: string) {
