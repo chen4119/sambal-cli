@@ -5,15 +5,15 @@ import TypeGenerator from "./TypeGenerator";
 import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
-import chokidar from "chokidar";
+// import chokidar from "chokidar";
 import shelljs from "shelljs";
-import {LinkedDataStore, OUTPUT_FOLDER, Logger} from "sambal";
+import {Logger} from "sambal";
 import Builder from "./Builder";
+import DevServer from "./DevServer";
+import {OUTPUT_FOLDER} from "./constants";
+import nodeExternals from "webpack-node-externals";
 
 const log = new Logger({name: "cli"});
-const config = require(`${process.cwd()}/sambal.config.js`);
-const store = new LinkedDataStore(config.host, {contentPath: config.contentPath, collections: config.collections});
-const START_SERVER_DELAY = 1000;
 
 function makeSchema(type, output, cmd) {
     const ext = path.extname(output).toLowerCase();
@@ -51,20 +51,18 @@ function startDevServer(files: string[], subscriber: Subscriber<unknown>) {
     }, START_SERVER_DELAY);
 }*/
 
+function serve() {
+    const devServer = new DevServer(3000);
+    devServer.start();
+}
+
 async function build() {
     log.info(`Cleaning ${OUTPUT_FOLDER}`);
     clean(OUTPUT_FOLDER);
-    const builder = new Builder(store, config.route$);
+    const config = require(`${process.cwd()}/sambal.config.js`);
+    const builder = new Builder(log, config.sitemap$, config.routes, config.webpack);
     try {
         await builder.start();
-    } catch (e) {
-        log.error(e);
-    }
-}
-
-async function indexContent() {
-    try {
-        await store.indexContent();
     } catch (e) {
         log.error(e);
     }
@@ -82,13 +80,13 @@ program
 
 program
 .command(`build`)
-.description('Generate website')
+.description('Generate static website')
 .action(build);
 
 program
-.command(`index`)
-.description('Index content')
-.action(indexContent);
+.command(`serve`)
+.description('Start dev server')
+.action(serve);
 
 program
 .command('*')

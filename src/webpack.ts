@@ -3,9 +3,10 @@ import path from "path";
 import {Logger} from "sambal";
 
 const log = new Logger({name: "Webpack"});
-const WEBPACK_CONFIG = {
+export const WEBPACK_CONFIG = {
     module: {
         rules: [
+            /*
             {
                 test: /\.js$/,
                 exclude: /(node_modules)/,
@@ -15,7 +16,7 @@ const WEBPACK_CONFIG = {
                         presets: ['@babel/preset-env']
                     }
                 }
-            },
+            },*/
             {
                 test: /\.css$/,
                 use: ['style-loader', 'css-loader']
@@ -43,7 +44,30 @@ const WEBPACK_CONFIG = {
     }
 };
 
-export async function build(input: string, dest: string) {
+export async function webpackBuild(webpackConfig, dest: string) {
+    if (!webpackConfig || !webpackConfig.entry) {
+        return [];
+    }
+    if (typeof(webpackConfig.entry) === "string") {
+        return build(webpackConfig.entry, dest);
+    } else if (Array.isArray(webpackConfig.entry)) {
+        let outputs = [];
+        for (const input of webpackConfig.entry) {
+            const output = await build(input, dest);
+            outputs = outputs.concat(output);
+        }
+        return outputs;
+    } else if (typeof(webpackConfig.entry) === "object") {
+        let outputs = {};
+        for (const fieldName in webpackConfig.entry) {
+            const output = await build(webpackConfig.entry[fieldName], dest);
+            outputs[fieldName] = output;
+        }
+        return outputs;
+    }
+}
+
+async function build(input: string, dest: string) {
     return new Promise<string[]>((resolve, reject) => {
         const output = path.normalize(`${dest}/${path.dirname(input)}`);
         const compiler = webpack({
@@ -60,10 +84,7 @@ export async function build(input: string, dest: string) {
 
         compiler.run((err, stats) => {
             if (err) {
-                log.error(err.stack || err);
-                if (err.details) {
-                    log.error(err.details);
-                }
+                log.error(err.stack || err.message);
                 reject(err);
                 return;
             }
