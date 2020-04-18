@@ -5,6 +5,7 @@ const {renderBlogPost} = require("./js/render");
 
 function landing({path, params}) {
     return of({
+        url: "https://chen4119.me",
         headline: 'headline',
         text: 'hello world'
     }).pipe(render(renderBlogPost));

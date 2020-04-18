@@ -11,7 +11,6 @@ import {Logger} from "sambal";
 import Builder from "./Builder";
 import DevServer from "./DevServer";
 import {OUTPUT_FOLDER} from "./constants";
-import nodeExternals from "webpack-node-externals";
 
 const log = new Logger({name: "cli"});
 
@@ -60,7 +59,7 @@ async function build() {
     log.info(`Cleaning ${OUTPUT_FOLDER}`);
     clean(OUTPUT_FOLDER);
     const config = require(`${process.cwd()}/sambal.config.js`);
-    const builder = new Builder(log, config.sitemap$, config.routes, config.webpack);
+    const builder = new Builder(config.sitemap$, config.routes, config.webpack);
     try {
         await builder.start();
     } catch (e) {
