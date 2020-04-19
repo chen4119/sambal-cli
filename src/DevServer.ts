@@ -151,9 +151,14 @@ class DevServer {
                 
                 ws.onmessage = function(e) {
                     if (e.data === "${CMD_REFRESH}") {
+                        console.log('Reloading...');
                         window.location.reload();
                     }
                 }
+
+                ws.onclose = function(e) {
+                    console.log("Sambal dev server disconnected");
+                };
             </script>`).appendTo("body");
     }
 
@@ -190,6 +195,7 @@ class DevServer {
                 if (!this.isServerStarted) {
                     this.startServer();
                 } else {
+                    this.log.info("Reloading browser");
                     this.broadcast("refresh");
                 }
             },
@@ -197,7 +203,7 @@ class DevServer {
                 
             },
             error: (err) => {
-                
+                this.log.error(err);
             }
         });
     }

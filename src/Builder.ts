@@ -59,6 +59,7 @@ class Builder {
         const webpackEntry = getWebpackEntry(this.webpackConfig.entry);
         for (const fieldName in webpackEntry) {
             const input = webpackEntry[fieldName];
+            this.log.info(`Bundling ${input}`);
             const output = await this.build(input);
             entries[fieldName] = {
                 input: input,
@@ -102,9 +103,11 @@ class Builder {
                 for (const route of this.router) {
                     const result = route.match(url);
                     if (result) {
+                        this.log.info(`Rendering ${url}`);
                         return route.render({path: result.path, params: result.params});
                     }
                 }
+                this.log.warn(`No route found for ${url}`);
                 return empty()
             })
         );
@@ -129,6 +132,7 @@ class Builder {
                     prettyHtml = prettier.format(html, {parser: "html"});
                 }
                 const uriPath = url.parse(dataURI).pathname;
+                this.log.info(`Writing ${uriPath}`);
                 return await this.write(path.join(OUTPUT_FOLDER, uriPath), prettyHtml);
             })
         );

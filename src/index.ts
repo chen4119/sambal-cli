@@ -52,7 +52,11 @@ function startDevServer(files: string[], subscriber: Subscriber<unknown>) {
 
 function serve() {
     const devServer = new DevServer(3000);
-    devServer.start();
+    try {
+        devServer.start();
+    } catch (e) {
+        log.error(e);
+    }
 }
 
 async function build() {
