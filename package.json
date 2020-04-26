@@ -1,6 +1,6 @@
 {
     "name": "sambal-cli",
-    "version": "0.0.31",
+    "version": "0.0.32",
     "description": "Sambal CLI tools",
     "main": "dist/src/index.js",
     "repository": {
@@ -31,6 +31,9 @@
         "clean": "rimraf ./dist",
         "serve": "ts-node src/index.ts serve"
     },
+    "peerDependencies": {
+        "sambal": "0.0.x"
+    },
     "dependencies": {
         "@babel/core": "7.7.7",
         "@babel/preset-env": "7.7.7",
@@ -40,8 +43,6 @@
         "express": "4.17.1",
         "file-loader": "5.0.2",
         "path-to-regexp": "6.1.0",
-        "sambal": "~0.0.28",
-        "sambal-jsonld": "~0.0.13",
         "style-loader": "1.1.1",
         "url-loader": "3.0.0",
         "webpack": "4.41.4",
@@ -59,11 +60,11 @@
         "@types/webpack": "4.41.4",
         "@types/ws": "7.2.4",
         "rimraf": "3.0.0",
+        "sambal": "~0.0.29",
         "tslint": "5.11.0",
         "ts-node": "7.0.1",
         "typescript": "3.5.3",
         "@fortawesome/fontawesome-free": "5.10.1",
-        "@webcomponents/webcomponentsjs": "2.2.10",
         "bootstrap": "4.3.1",
         "jquery": "3.4.1",
         "prismjs": "1.17.1"
