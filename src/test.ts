@@ -2,7 +2,6 @@
 const {render, template} = require("sambal");
 const {from} = require("rxjs");
 const {map} = require("rxjs/operators");
-import {webpackBuild} from "./webpack";
 import path from "path";
 import webpack from "webpack";
 

@@ -8,7 +8,7 @@ Build fast and SEO friendly website with [RxJs](https://rxjs-dev.firebaseapp.com
 ## Installation
 
 ```sh
-npm install --save-dev sambal-cli
+npm install --save-dev sambal-cli sambal
 
 touch sambal.config.js
 ```
@@ -50,9 +50,32 @@ module.exports = {
         {path: '/', render: render},                 // REQUIRED. Array of routes.  Path is an expressjs style path, render is a function of type ({path, params}) => Observable  
         {path: '/user/:username', render: render}
     ],
-    sitemap$: sitemap(),                             // REQUIRED.  Observable of all possible urls in your website.  
-    webpack: {
-        entry: './js/index.js'                       // OPTIONAL.  Bundle javascript using webpack.  Provide entry to webpack which can be string, array of strings, or an object
-    }
+    sitemap$: sitemap()                              // REQUIRED.  Observable of all possible urls in your website.  
 };
+```
+
+## Generate static site
+
+```sh
+npx sambal build
+```
+
+## Start dev server and reload browser on change event
+
+```sh
+npx sambal serve
+```
+
+## Generate schema.org boilerplate type in yaml or json format
+
+```sh
+npx sambal schema.org <schema.org type> <output file> [-f, --full]
+```
+
+For example,
+
+```sh
+npx sambal schema.org person person.yml
+
+npx sambal schema.org blogposting blog.json
 ```

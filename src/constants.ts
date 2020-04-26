@@ -17,6 +17,11 @@ export type Route = {
     render: RenderFunction
 };
 
+export type JsMapping = {
+    input: string,
+    output: string
+}
+
 export type WebpackEntrypoints = {
     [key: string]: string
 }
@@ -25,43 +30,3 @@ export type WebpackEvent = {
     type: "bundle" | "sambal",
     entries: WebpackEntrypoints
 }
-
-export const WEBPACK_RULES = {
-    module: {
-        rules: [
-            {
-                test: /\.js$/,
-                exclude: /(node_modules)/,
-                use: {
-                    loader: 'babel-loader',
-                    options: {
-                        presets: ['@babel/preset-env']
-                    }
-                }
-            },
-            {
-                test: /\.css$/,
-                use: ['style-loader', 'css-loader']
-            },
-            {
-                test: /\.(png|jpe?g|gif|svg)$/,
-                use: [{
-                    loader: "url-loader",
-                    options: {
-                        limit: 8192
-                    }
-                }]
-            },
-            {
-                // Apply rule for fonts files
-                test: /\.(woff|woff2|ttf|otf|eot)$/,
-                use: [{
-                    loader: "url-loader",
-                    options: {
-                        limit: 8192
-                    }
-                }]
-            }
-        ]
-    }
-};

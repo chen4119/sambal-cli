@@ -10,3 +10,4 @@ css/
 *.css
 *.md
 sambal.config.js
+webpack.config.js

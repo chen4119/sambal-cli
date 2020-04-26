@@ -1,7 +1,7 @@
 import shelljs from "shelljs";
 import path from "path";
 import fs from "fs";
-import {WebpackEntrypoints} from "./constants";
+import {WebpackEntrypoints, JsMapping} from "./constants";
 import {Logger} from "sambal";
 
 const log = new Logger({name: "Webpack"});
@@ -19,28 +19,48 @@ export function writeFile(output: string, content: string): Promise<void> {
     });
 }
 
-// webpack entry can be a string, array of strings, or an object. Normalize into object
-export function getWebpackEntry(entrypoints): WebpackEntrypoints {
-    const webpackEntries = {};
-    if (typeof(entrypoints) === "string") {
-        webpackEntries["main"] = entrypoints;
-    } else if (Array.isArray(entrypoints)) {
-        for (let i = 0; i < entrypoints.length; i++) {
-            webpackEntries[`main${i}`] = entrypoints[i];
+export function mapJsEntryToWebpackOutput(entry, webpackOutput: WebpackEntrypoints): JsMapping[] {
+    const mapping: JsMapping[] = [];
+    if (typeof(entry) === "string") {
+        mapping.push({
+            input: entry,
+            output: webpackOutput.main
+        });
+    } else if (Array.isArray(entry)) {
+        for (let i = 0; i < entry.length; i++) {
+            mapping.push({
+                input: entry[i],
+                output: webpackOutput.main
+            });
         }
     } else {
-        for (const key of Object.keys(entrypoints)) {
-            webpackEntries[key] = entrypoints[key];
+        for (const key of Object.keys(entry)) {
+            mapping.push({
+                input: entry[key],
+                output: webpackOutput[key]
+            });
         }
     }
-    return webpackEntries;
+    return mapping;
 }
 
-export function parseWebpackStatsEntrypoints(entrypoints): WebpackEntrypoints {
+export function substituteJsPath(jsMapping: JsMapping[], src: string) {
+    const srcPath = path.resolve(process.cwd(), src);
+    for (const map of jsMapping) {
+        const filePath = path.resolve(process.cwd(), map.input);
+        if (srcPath === filePath) {
+            return map.output;
+        }
+    }
+    return src;
+}
+
+export function parseWebpackStatsEntrypoints(output, entrypoints): WebpackEntrypoints {
     const entries = {};
     for (const key of Object.keys(entrypoints)) {
         const assetName = entrypoints[key].assets[0];
-        entries[key] = assetName;
+
+        entries[key] = (output && output.publicPath) ?  path.normalize(`${output.publicPath}/${assetName}`) : `/${assetName}`;
     }
     return entries;
 }

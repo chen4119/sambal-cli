@@ -29,11 +29,5 @@ module.exports = {
         {path: '/about', render: landing},
         {path: '/user/:username', render: landing}
     ],
-    sitemap$: sitemap(),
-    webpack: {
-        entry: {
-            pageOne: './js/index.js',
-            pageTwo: './js/page2.js'
-        }
-    }
+    sitemap$: sitemap()
 };

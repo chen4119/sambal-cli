@@ -6,26 +6,26 @@ import webpack from "webpack";
 import path from "path";
 import shelljs from "shelljs";
 import webpackDevMiddleware from "webpack-dev-middleware";
-import {RenderFunction, SAMBAL_CONFIG_FILE, CACHE_FOLDER, WebpackEvent, WEBSOCKET_ADDR, WEBPACK_RULES} from "./constants";
-import {parseWebpackStatsEntrypoints, getWebpackEntry, webpackCallback} from "./utils";
+import {RenderFunction, SAMBAL_CONFIG_FILE, CACHE_FOLDER, WebpackEvent, WEBSOCKET_ADDR, JsMapping} from "./constants";
+import {parseWebpackStatsEntrypoints, webpackCallback, mapJsEntryToWebpackOutput, substituteJsPath} from "./utils";
 import {match, Match} from "path-to-regexp";
 import nodeExternals from "webpack-node-externals";
 import WebpackListenerPlugin from "./WebpackListenerPlugin";
 import WebSocket from "ws";
 
-const PUBLIC_PATH = "_sambal";
+const PUBLIC_PATH = "/_sambal";
 const CMD_REFRESH = "refresh";
 
 class DevServer {
     private expressApp;
     private sambalConfig;
     private webSocketServer: WebSocket.Server;
-    private webpackEntry; // initial webpack entry specified by user
+    private jsMapping: JsMapping[];
     private configReady$: Subject<WebpackEvent> = new Subject<WebpackEvent>();
-    private compilerListener: WebpackListenerPlugin = new WebpackListenerPlugin();
+    private compilerListener: WebpackListenerPlugin = new WebpackListenerPlugin(PUBLIC_PATH);
     private isServerStarted: boolean = false;
     private log: Logger = new Logger({name: "Dev Server"});
-    constructor(private port: Number) {
+    constructor(private webpackConfig, private port: Number) {
         
     }
 
@@ -56,8 +56,8 @@ class DevServer {
             poll: 1000
         }, webpackCallback((err, stats) => {
             if (!err) {
-                const entrypoints = parseWebpackStatsEntrypoints(stats.entrypoints);
-                const configPath = path.resolve(process.cwd(), `${CACHE_FOLDER}/${entrypoints.main}`);
+                const entrypoints = parseWebpackStatsEntrypoints({publicPath: `/${CACHE_FOLDER}`}, stats.entrypoints);
+                const configPath = path.resolve(process.cwd(), `./${entrypoints.main}`);
                 this.sambalConfig = require(configPath);
                 this.configReady$.next({
                     type: "sambal",
@@ -79,24 +79,23 @@ class DevServer {
     }
 
     private addWebpackMiddleware() {
-        if (!this.hasWebpackEntries()) {
+        if (!this.webpackConfig) {
             return;
         }
-        this.webpackEntry = getWebpackEntry(this.sambalConfig.webpack.entry);
         const compiler = webpack({
-            mode: "production",
-            entry: this.webpackEntry,
+            ...this.webpackConfig,
             output: {
-                publicPath: `/${PUBLIC_PATH}`,
-                // filename: "[name].js",
-                libraryTarget: "umd"
+                ...this.webpackConfig.output,
+                publicPath: PUBLIC_PATH
             },
-            plugins: [this.compilerListener],
-            ...WEBPACK_RULES
+            plugins: [
+                ...this.webpackConfig.plugins,
+                this.compilerListener
+            ]
         });
     
         const webpackMiddleware = webpackDevMiddleware(compiler, {
-            publicPath: `/${PUBLIC_PATH}`,
+            publicPath: PUBLIC_PATH,
         });
         this.expressApp.use(webpackMiddleware);
     }
@@ -131,7 +130,7 @@ class DevServer {
             editAttribs: (name, attribs) => {
                 if (name === 'script' && attribs.src) {
                     return {
-                        src: this.substituteJsPath(attribs.src)
+                        src: substituteJsPath(this.jsMapping, attribs.src)
                     };
                 }
                 return attribs;
@@ -171,23 +170,6 @@ class DevServer {
         );
     }
 
-    private substituteJsPath(src: string) {
-        if (this.webpackEntry) {
-            const srcPath = path.resolve(process.cwd(), src);
-            for (const key of Object.keys(this.webpackEntry)) {
-                const filePath = path.resolve(process.cwd(), this.webpackEntry[key]);
-                if (srcPath === filePath) {
-                    return `/${PUBLIC_PATH}/${key}.js`;
-                }
-            }
-        }
-        return src;
-    }
-
-    private hasWebpackEntries() {
-        return this.sambalConfig.webpack && this.sambalConfig.webpack.entry;
-    }
-
     private broadcast(msg: string) {
         if (this.webSocketServer) {
             this.webSocketServer.clients.forEach(client => {
@@ -201,6 +183,10 @@ class DevServer {
         const events$ = from([this.configReady$, this.compilerListener.bundleChanged$]).pipe(mergeAll());
         events$.subscribe({
             next: (e: WebpackEvent) => {
+                if (!this.jsMapping && e.type === 'bundle') {
+                    this.jsMapping = mapJsEntryToWebpackOutput(this.webpackConfig.entry, e.entries);
+                }
+
                 if (!this.isServerStarted) {
                     this.startServer();
                 } else {

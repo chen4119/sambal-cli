@@ -3,23 +3,16 @@ import {mergeMap} from "rxjs/operators";
 import path from "path";
 import url from "url";
 import {Logger, toHtml} from "sambal";
-import {Route} from "./constants";
+import {Route, WebpackEntrypoints} from "./constants";
 import {match, Match} from "path-to-regexp";
-import {writeFile, getWebpackEntry, parseWebpackStatsEntrypoints, webpackCallback} from "./utils";
-import {RenderFunction, OUTPUT_FOLDER, WEBPACK_RULES} from "./constants";
+import {writeFile, parseWebpackStatsEntrypoints, webpackCallback, mapJsEntryToWebpackOutput, substituteJsPath} from "./utils";
+import {RenderFunction, OUTPUT_FOLDER, JsMapping} from "./constants";
 import webpack from "webpack";
 
 type RouteRenderer = {
     match: (url: string) => Match<object>,
     render: RenderFunction
 };
-
-type JsEntries = {
-    [key: string]: {
-        input: string,
-        output: string
-    }
-}
 
 class Builder {
     private router: RouteRenderer[] = [];
@@ -30,11 +23,11 @@ class Builder {
 
     async start(sitemap$: Observable<any>, routes: Route[]) {
         this.buildRouter(routes);
-        const jsEntries = await this.bundle();
+        const jsMapping = await this.bundle();
         let count = 0;
         return new Promise<void>((resolve, reject) => {
             sitemap$
-            .pipe(this.routeUrl(jsEntries))
+            .pipe(this.routeUrl(jsMapping))
             .pipe(this.outputHtml())
             .subscribe({
                 next: d => {
@@ -67,44 +60,21 @@ class Builder {
         });
     }
 
-    private async bundle(): Promise<JsEntries> {
-        const entries = {};
-        if (!this.webpackConfig || !this.webpackConfig.entry) {
-            return entries;
+    private async bundle(): Promise<JsMapping[]> {
+        if (!this.webpackConfig) {
+            return [];
         }
-        const webpackEntry = getWebpackEntry(this.webpackConfig.entry);
-        for (const fieldName in webpackEntry) {
-            const input = webpackEntry[fieldName];
-            this.log.info(`Bundling ${input}`);
-            const output = await this.build(input);
-            entries[fieldName] = {
-                input: input,
-                output: output
-            };
-        }
-        return entries;
+        const output = await this.build();
+        return mapJsEntryToWebpackOutput(this.webpackConfig.entry, output);
     }
-    
-    private async build(input: string) {
-        return new Promise<string>((resolve, reject) => {
-            const dest = path.resolve(process.cwd(), OUTPUT_FOLDER);
-            const output = path.normalize(`${dest}/${path.dirname(input)}`);
-            const compiler = webpack({
-                mode: "production",
-                entry: input,
-                output: {
-                    path: output,
-                    publicPath: `/${path.dirname(input)}/`,
-                    filename: "[name]-[hash].js",
-                    libraryTarget: "umd"
-                },
-                ...WEBPACK_RULES
-            });
-    
+
+    private async build() {
+        return new Promise<WebpackEntrypoints>((resolve, reject) => {
+            const compiler = webpack(this.webpackConfig);
             compiler.run(webpackCallback((err, stats) => {
                 if (!err) {
-                    const entrypoints = parseWebpackStatsEntrypoints(stats.entrypoints);
-                    resolve(`/${path.join(path.dirname(input), entrypoints.main)}`);
+                    const entrypoints = parseWebpackStatsEntrypoints(this.webpackConfig.output, stats.entrypoints);
+                    resolve(entrypoints);
                 } else {
                     reject(err);
                 }
@@ -112,7 +82,7 @@ class Builder {
         });
     }
 
-    private routeUrl(jsEntries: JsEntries) {
+    private routeUrl(jsMapping: JsMapping[]) {
         return pipe(
             mergeMap((link: any) => {
                 const url = this.getUrl(link);
@@ -122,7 +92,7 @@ class Builder {
                         this.log.info(`Rendering ${url}`);
                         return forkJoin({
                             uri: of(url),
-                            html: this.renderHtml(route, result.path, result.params, jsEntries)
+                            html: this.renderHtml(route, result.path, result.params, jsMapping)
                         })
                     }
                 }
@@ -132,14 +102,14 @@ class Builder {
         );
     }
 
-    private renderHtml(route, path, params, jsEntries: JsEntries) {
+    private renderHtml(route, path, params, jsMapping: JsMapping[]) {
         return route
         .render({path: path, params: params})
         .pipe(toHtml({
             editAttribs: (name, attribs) => {
                 if (name === 'script' && attribs.src) {
                     return {
-                        src: this.substituteJsPath(jsEntries, attribs.src)
+                        src: substituteJsPath(jsMapping, attribs.src)
                     };
                 }
                 return attribs;
@@ -155,17 +125,6 @@ class Builder {
                 return await this.write(path.join(OUTPUT_FOLDER, uriPath), d.html);
             })
         );
-    }
-
-    private substituteJsPath(jsEntries: JsEntries, src: string) {
-        const srcPath = path.resolve(process.cwd(), src);
-        for (const key of Object.keys(jsEntries)) {
-            const filePath = path.resolve(process.cwd(), jsEntries[key].input);
-            if (srcPath === filePath) {
-                return jsEntries[key].output;
-            }
-        }
-        return src;
     }
 
     private getUrl(route: any) {

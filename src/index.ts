@@ -14,6 +14,22 @@ import {OUTPUT_FOLDER} from "./constants";
 
 const log = new Logger({name: "cli"});
 
+let webpackConfig = null;
+const webpackConfigPath = `${process.cwd()}/webpack.config.js`;
+if (shelljs.test('-f', webpackConfigPath)) {
+    webpackConfig = require(webpackConfigPath);
+    if (!webpackConfig.entry) {
+        log.warn("No webpack entry specified");
+        webpackConfig = null;
+    }
+    if (!webpackConfig.plugins) {
+        webpackConfig.plugins = [];
+    }
+    if (!webpackConfig.output) {
+        webpackConfig.output = {};
+    }
+}
+
 function makeSchema(type, output, cmd) {
     const ext = path.extname(output).toLowerCase();
     if (ext !== ".yaml" && ext !== ".yml" && ext !== ".json") {
@@ -51,7 +67,7 @@ function startDevServer(files: string[], subscriber: Subscriber<unknown>) {
 }*/
 
 function serve() {
-    const devServer = new DevServer(3000);
+    const devServer = new DevServer(webpackConfig, 3000);
     try {
         devServer.start();
     } catch (e) {
@@ -63,7 +79,7 @@ async function build() {
     log.info(`Cleaning ${OUTPUT_FOLDER}`);
     clean(OUTPUT_FOLDER);
     const config = require(`${process.cwd()}/sambal.config.js`);
-    const builder = new Builder(config.webpack);
+    const builder = new Builder(webpackConfig);
     try {
         await builder.start(config.sitemap$, config.routes);
     } catch (e) {
