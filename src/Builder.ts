@@ -1,13 +1,12 @@
-import {Observable, pipe, empty} from "rxjs";
-import {mergeMap, tap} from "rxjs/operators";
+import {Observable, pipe, empty, forkJoin, of} from "rxjs";
+import {mergeMap} from "rxjs/operators";
 import path from "path";
 import url from "url";
-import {Logger, dom, toHtml} from "sambal";
+import {Logger, toHtml} from "sambal";
 import {Route} from "./constants";
 import {match, Match} from "path-to-regexp";
 import {writeFile, getWebpackEntry, parseWebpackStatsEntrypoints, webpackCallback} from "./utils";
 import {RenderFunction, OUTPUT_FOLDER, WEBPACK_RULES} from "./constants";
-import prettier from "prettier";
 import webpack from "webpack";
 
 type RouteRenderer = {
@@ -24,30 +23,47 @@ type JsEntries = {
 
 class Builder {
     private router: RouteRenderer[] = [];
-    private prettyHtml: Boolean = true;
     private log: Logger = new Logger({name: "Builder"});
-    constructor(private sitemap$: Observable<any>, private routes: Route[], private webpackConfig) {
-        this.router = this.routes.map(r => ({
-            match: match(r.path),
-            render: r.render
-        }));
+    constructor(private webpackConfig) {
+
     }
 
-    async start() {
+    async start(sitemap$: Observable<any>, routes: Route[]) {
+        this.buildRouter(routes);
         const jsEntries = await this.bundle();
+        let count = 0;
         return new Promise<void>((resolve, reject) => {
-            this.sitemap$
-            .pipe(this.renderHtml())
-            .pipe(this.outputHtml(jsEntries))
+            sitemap$
+            .pipe(this.routeUrl(jsEntries))
+            .pipe(this.outputHtml())
             .subscribe({
-                next: d => console.log(d),
+                next: d => {
+                    count++;
+                    this.log.info(`Wrote ${d}`);
+                },
                 complete: () => {
+                    this.log.info(`Generated ${count} pages`);
                     resolve();
                 },
                 error: (err) => {
                     reject(err);
                 }
             });
+        });
+    }
+
+    private buildRouter(routes: Route[]) {
+        this.router = routes.map(r => {
+            let matcher;
+            try {
+                matcher = match(r.path);
+            } catch (e) {
+                throw new Error(`Invalid route path: ${r.path}`);
+            }
+            return {
+                match: matcher,
+                render: r.render
+            };
         });
     }
 
@@ -96,7 +112,7 @@ class Builder {
         });
     }
 
-    private renderHtml() {
+    private routeUrl(jsEntries: JsEntries) {
         return pipe(
             mergeMap((link: any) => {
                 const url = this.getUrl(link);
@@ -104,7 +120,10 @@ class Builder {
                     const result = route.match(url);
                     if (result) {
                         this.log.info(`Rendering ${url}`);
-                        return route.render({path: result.path, params: result.params});
+                        return forkJoin({
+                            uri: of(url),
+                            html: this.renderHtml(route, result.path, result.params, jsEntries)
+                        })
                     }
                 }
                 this.log.warn(`No route found for ${url}`);
@@ -113,27 +132,27 @@ class Builder {
         );
     }
 
-    private outputHtml(jsEntries: JsEntries) {
-        let dataURI;
-        return pipe(
-            tap((d: any) => dataURI = d.url),
-            dom(($) => {
-                const scriptSelector = "script[src]";
-                const clazz = this;
-                $(scriptSelector).each(function() {
-                    const jsFile = $(this).attr("src");
-                    $(this).attr("src", clazz.substituteJsPath(jsEntries, jsFile));
-                });
-            }),
-            toHtml(),
-            mergeMap(async (html: string) => {
-                let prettyHtml = html;
-                if (this.prettyHtml) {
-                    prettyHtml = prettier.format(html, {parser: "html"});
+    private renderHtml(route, path, params, jsEntries: JsEntries) {
+        return route
+        .render({path: path, params: params})
+        .pipe(toHtml({
+            editAttribs: (name, attribs) => {
+                if (name === 'script' && attribs.src) {
+                    return {
+                        src: this.substituteJsPath(jsEntries, attribs.src)
+                    };
                 }
-                const uriPath = url.parse(dataURI).pathname;
-                this.log.info(`Writing ${uriPath}`);
-                return await this.write(path.join(OUTPUT_FOLDER, uriPath), prettyHtml);
+                return attribs;
+            }
+        }))
+        .toPromise();
+    }
+
+    private outputHtml() {
+        return pipe(
+            mergeMap(async (d: {uri: string, html: string}) => {
+                const uriPath = url.parse(d.uri).pathname;
+                return await this.write(path.join(OUTPUT_FOLDER, uriPath), d.html);
             })
         );
     }
@@ -162,6 +181,7 @@ class Builder {
         if (ext !== '.html' && ext !== '.htm') {
             output = `${dest}/index.html`;
         }
+        output = path.normalize(output);
         await writeFile(output, content);
         return output;
     }

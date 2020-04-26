@@ -1,7 +1,7 @@
 import express from "express";
-import {Subject, from} from "rxjs";
-import {mergeAll} from "rxjs/operators";
-import {Logger, toHtml, dom} from "sambal";
+import {Subject, from, pipe} from "rxjs";
+import {mergeAll, map} from "rxjs/operators";
+import {Logger, toHtml} from "sambal";
 import webpack from "webpack";
 import path from "path";
 import shelljs from "shelljs";
@@ -127,39 +127,48 @@ class DevServer {
             params: params
         });
         const html = await obs$
-        .pipe(dom(($) => {
-            const scriptSelector = "script[src]";
-            const clazz = this;
-            $(scriptSelector).each(function() {
-                const jsFile = $(this).attr("src");
-                $(this).attr("src", clazz.substituteJsPath(jsFile));
-            });
-            clazz.addBrowserSyncScript($);
+        .pipe(toHtml({
+            editAttribs: (name, attribs) => {
+                if (name === 'script' && attribs.src) {
+                    return {
+                        src: this.substituteJsPath(attribs.src)
+                    };
+                }
+                return attribs;
+            }
         }))
-        .pipe(toHtml()).toPromise();
+        .pipe(this.addBrowserSyncScript())
+        .toPromise();
         res.send(html);
     }
     
-    private addBrowserSyncScript($) {
-        $(
-            `<script>
-                const ws = new WebSocket("${WEBSOCKET_ADDR}");
+    private addBrowserSyncScript() {
+        const browserSync = `
+        <script>
+            const ws = new WebSocket("${WEBSOCKET_ADDR}");
 
-                ws.onopen = function() {
-                    console.log('Sambal dev server connected');
-                };
-                
-                ws.onmessage = function(e) {
-                    if (e.data === "${CMD_REFRESH}") {
-                        console.log('Reloading...');
-                        window.location.reload();
-                    }
+            ws.onopen = function() {
+                console.log('Sambal dev server connected');
+            };
+            
+            ws.onmessage = function(e) {
+                if (e.data === "${CMD_REFRESH}") {
+                    console.log('Reloading...');
+                    window.location.reload();
                 }
+            }
 
-                ws.onclose = function(e) {
-                    console.log("Sambal dev server disconnected");
-                };
-            </script>`).appendTo("body");
+            ws.onclose = function(e) {
+                console.log("Sambal dev server disconnected");
+            };
+        </script>`;
+
+        return pipe(
+            map((html: string) => {
+                const index = html.indexOf("</body>");
+                return html.substring(0, index) + browserSync + html.substring(index);
+            })
+        );
     }
 
     private substituteJsPath(src: string) {

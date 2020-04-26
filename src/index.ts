@@ -63,9 +63,9 @@ async function build() {
     log.info(`Cleaning ${OUTPUT_FOLDER}`);
     clean(OUTPUT_FOLDER);
     const config = require(`${process.cwd()}/sambal.config.js`);
-    const builder = new Builder(config.sitemap$, config.routes, config.webpack);
+    const builder = new Builder(config.webpack);
     try {
-        await builder.start();
+        await builder.start(config.sitemap$, config.routes);
     } catch (e) {
         log.error(e);
     }

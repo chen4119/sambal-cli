@@ -26,8 +26,8 @@ module.exports = {
     watch: '',
     routes: [
         {path: '/', render: landing},
-        // {path: '/about', render: landing},
-        // {path: '/user/:username', render: landing}
+        {path: '/about', render: landing},
+        {path: '/user/:username', render: landing}
     ],
     sitemap$: sitemap(),
     webpack: {
