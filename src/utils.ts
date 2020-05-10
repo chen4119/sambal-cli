@@ -6,14 +6,27 @@ import {Logger} from "sambal";
 
 const log = new Logger({name: "Webpack"});
 
-export function writeFile(output: string, content: string): Promise<void> {
+export function writeText(output: string, content: string): Promise<string> {
     return new Promise((resolve, reject) => {
         shelljs.mkdir("-p", path.dirname(output));
         fs.writeFile(output, content, "utf-8", (err) => {
             if (err) {
                 reject(err);
             } else {
-                resolve();
+                resolve(output);
+            }
+        });
+    });
+}
+
+export function writeBuffer(output: string, content: Buffer): Promise<string> {
+    return new Promise((resolve, reject) => {
+        shelljs.mkdir("-p", path.dirname(output));
+        fs.writeFile(output, content, (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(output);
             }
         });
     });
@@ -83,4 +96,8 @@ export function webpackCallback(callback) {
         }
         callback(null, info);
     };
+}
+
+export function isUrl(src: string) {
+    return src.startsWith("http://") || src.startsWith("https://");
 }

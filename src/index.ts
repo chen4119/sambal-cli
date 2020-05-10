@@ -10,7 +10,7 @@ import shelljs from "shelljs";
 import {Logger} from "sambal";
 import Builder from "./Builder";
 import DevServer from "./DevServer";
-import {OUTPUT_FOLDER} from "./constants";
+import {OUTPUT_FOLDER, SAMBAL_CONFIG_FILE} from "./constants";
 
 const log = new Logger({name: "cli"});
 
@@ -78,8 +78,8 @@ function serve() {
 async function build() {
     log.info(`Cleaning ${OUTPUT_FOLDER}`);
     clean(OUTPUT_FOLDER);
-    const config = require(`${process.cwd()}/sambal.config.js`);
-    const builder = new Builder(webpackConfig);
+    const config = require(`${process.cwd()}/${SAMBAL_CONFIG_FILE}`);
+    const builder = new Builder(webpackConfig, config.asset$);
     try {
         await builder.start(config.sitemap$, config.routes);
     } catch (e) {

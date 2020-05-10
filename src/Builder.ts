@@ -5,9 +5,10 @@ import url from "url";
 import {Logger, toHtml} from "sambal";
 import {Route, WebpackEntrypoints} from "./constants";
 import {match, Match} from "path-to-regexp";
-import {writeFile, parseWebpackStatsEntrypoints, webpackCallback, mapJsEntryToWebpackOutput, substituteJsPath} from "./utils";
+import {writeText, parseWebpackStatsEntrypoints, webpackCallback, mapJsEntryToWebpackOutput, substituteJsPath} from "./utils";
 import {RenderFunction, OUTPUT_FOLDER, JsMapping} from "./constants";
 import webpack from "webpack";
+import Asset from "./Asset";
 
 type RouteRenderer = {
     match: (url: string) => Match<object>,
@@ -17,12 +18,16 @@ type RouteRenderer = {
 class Builder {
     private router: RouteRenderer[] = [];
     private log: Logger = new Logger({name: "Builder"});
-    constructor(private webpackConfig) {
+    private asset: Asset;
 
+    constructor(private webpackConfig, asset$: Observable<any>) {
+        this.asset = new Asset(asset$ ? asset$ : empty(), OUTPUT_FOLDER);
     }
 
     async start(sitemap$: Observable<any>, routes: Route[]) {
         this.buildRouter(routes);
+        await this.asset.init();
+        await this.asset.generate();
         const jsMapping = await this.bundle();
         let count = 0;
         return new Promise<void>((resolve, reject) => {
@@ -141,8 +146,7 @@ class Builder {
             output = `${dest}/index.html`;
         }
         output = path.normalize(output);
-        await writeFile(output, content);
-        return output;
+        return await writeText(output, content);
     }
 }
 

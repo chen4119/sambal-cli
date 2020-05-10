@@ -21,12 +21,19 @@ class DevServer {
     private sambalConfig;
     private webSocketServer: WebSocket.Server;
     private jsMapping: JsMapping[];
-    private configReady$: Subject<WebpackEvent> = new Subject<WebpackEvent>();
-    private compilerListener: WebpackListenerPlugin = new WebpackListenerPlugin(PUBLIC_PATH);
-    private isServerStarted: boolean = false;
-    private log: Logger = new Logger({name: "Dev Server"});
+    private configReady$: Subject<WebpackEvent>;
+    private compilerListener: WebpackListenerPlugin;
+    private isServerStarted: boolean;
+    private isSambalBundled: boolean;
+    private isMiddlewareBundled: boolean;
+    private log: Logger;
     constructor(private webpackConfig, private port: Number) {
-        
+        this.log = new Logger({name: "Dev Server"});
+        this.configReady$ = new Subject<WebpackEvent>();
+        this.compilerListener = new WebpackListenerPlugin(PUBLIC_PATH);
+        this.isServerStarted = false;
+        this.isSambalBundled = false;
+        this.isMiddlewareBundled = false;
     }
 
     start() {
@@ -80,6 +87,7 @@ class DevServer {
 
     private addWebpackMiddleware() {
         if (!this.webpackConfig) {
+            this.isMiddlewareBundled = true;
             return;
         }
         const compiler = webpack({
@@ -108,7 +116,11 @@ class DevServer {
                 const result = matcher(req.path);
                 if (result) {
                     isRendered = true;
-                    this.renderPage(result.path, result.params, route.render, res);
+                    try {
+                        this.renderPage(result.path, result.params, route.render, res);
+                    } catch (e) {
+                        res.send(e.toString());
+                    }
                     break;
                 }
             }
@@ -128,7 +140,7 @@ class DevServer {
         const html = await obs$
         .pipe(toHtml({
             editAttribs: (name, attribs) => {
-                if (name === 'script' && attribs.src) {
+                if (name === 'script' && attribs.src && this.jsMapping) {
                     return {
                         src: substituteJsPath(this.jsMapping, attribs.src)
                     };
@@ -183,13 +195,16 @@ class DevServer {
         const events$ = from([this.configReady$, this.compilerListener.bundleChanged$]).pipe(mergeAll());
         events$.subscribe({
             next: (e: WebpackEvent) => {
-                if (!this.jsMapping && e.type === 'bundle') {
+                if (!this.isSambalBundled && e.type === "sambal") {
+                    this.isSambalBundled = true;
+                } else if (!this.isMiddlewareBundled && e.type === "bundle") {
+                    this.isMiddlewareBundled = true;
                     this.jsMapping = mapJsEntryToWebpackOutput(this.webpackConfig.entry, e.entries);
                 }
 
-                if (!this.isServerStarted) {
+                if (!this.isServerStarted && this.isSambalBundled && this.isMiddlewareBundled) {
                     this.startServer();
-                } else {
+                } else if (this.isServerStarted) {
                     this.log.info("Reloading browser");
                     this.broadcast("refresh");
                 }

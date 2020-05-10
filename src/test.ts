@@ -4,7 +4,8 @@ const {from} = require("rxjs");
 const {map} = require("rxjs/operators");
 import path from "path";
 import webpack from "webpack";
-
+const config = require("../webpack.config.js");
+import Asset from "./Asset";
 /*
 const renderBlogPost = ({headline}) => {
     return template`
@@ -32,17 +33,39 @@ Hello world</code></pre>
 function renderPage(obs) {
     return obs.pipe(render(renderBlogPost));
 }
+*/
 
+/*
+(async () => {
+    const compiler = webpack(config);
+    
+    compiler.run((err, stats) => {
+        const info = stats.toJson();
+        console.log(info.assets);
+    });
+})();*/
+
+const source = from([
+    './bg.jpg',
+    {
+        src: './bg.jpg',
+        dest: './bg-[hash].jpg',
+        alt: '123',
+        responsive: [
+            {
+                srcset: 'bg-470.jpg 480w',
+                sizes: '',
+                media: ''
+            }
+        ]
+    }
+]);
 
 (async () => {
-    const results = await webpackBuild({
-        entry: {
-            pageOne: "./js/index.js",
-            pageTwo: "./js/page2.js"
-        }
-    }, path.resolve(process.cwd(), "public"));
-    console.log(results);
-})(); */
+    const asset = new Asset(source, "public");
+    await asset.init();
+    await asset.generate();
+})();
 
 
 

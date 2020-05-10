@@ -19,15 +19,18 @@ function sitemap() {
     ]);
 }
 
+function asset() {
+    return from([
+        './assets/bg.jpg'
+    ]);
+}
+
 module.exports = {
-    // host: "https://chen4119.me",
-    // contentPath: "content",
-    // collections: null,
-    watch: '',
     routes: [
         {path: '/', render: landing},
         {path: '/about', render: landing},
         {path: '/user/:username', render: landing}
     ],
-    sitemap$: sitemap()
+    sitemap$: sitemap(),
+    asset$: asset()
 };
