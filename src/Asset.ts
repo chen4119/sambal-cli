@@ -108,19 +108,36 @@ class Asset {
 
     // file1.jpg 240w, file2.jpg 2x, file3.png
     private parseSrcSet(src: string, srcset: string): ImageTransform[] {
+        const transforms: ImageTransform[] = [];
         const sources = srcset.split(",");
-        return sources.map(source => {
+        for (const source of sources) {
             const splitted = source.split(/[ ]+/);
             const dest = this.getDestPath(src, splitted[0]);
+            if (!Asset.isValidAsset(dest)) {
+                this.log.warn(`Unsupported file format ${dest}`);
+                continue;
+            }
             if (splitted.length === 2) {
                 if (splitted[1].endsWith("w")) {
-                    return {src: src, dest: dest, width: Number(splitted[1].substring(0, splitted[1].length - 1))};
+                    transforms.push({
+                        src: src,
+                        dest: dest,
+                        width: Number(splitted[1].substring(0, splitted[1].length - 1))
+                    });
                 } else if (splitted[1].endsWith("x")) {
-                    return {src: src, dest: dest, resolution: Number(splitted[1].substring(0, splitted[1].length - 1))};
+                    transforms.push({
+                        src: src,
+                        dest: dest,
+                        resolution: Number(splitted[1].substring(0, splitted[1].length - 1))
+                    });
                 } 
             }
-            return {src: src, dest: dest};
-        });
+            transforms.push({
+                src: src,
+                dest: dest
+            });
+        }
+        return transforms;
     }
 
     private getDestPath(src: string, dest: string) {
@@ -141,7 +158,7 @@ class Asset {
                         src: asset,
                         responsive: []
                     };
-                } else if (asset.src && this.isValidAsset(asset.src)) {
+                } else if (asset.src && Asset.isValidAsset(asset.src)) {
                     return {
                         ...asset,
                         responsive: asset.responsive ? 
@@ -155,7 +172,7 @@ class Asset {
         );
     }
 
-    private isValidAsset(src: string): boolean {
+    static isValidAsset(src: string): boolean {
         return /\.(png|jpe?g|gif|svg|webp)$/i.test(src);
     }
 
