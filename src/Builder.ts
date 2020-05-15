@@ -1,5 +1,5 @@
 import {Observable, pipe, empty, forkJoin, of} from "rxjs";
-import {mergeMap} from "rxjs/operators";
+import {mergeMap, share, map, filter} from "rxjs/operators";
 import path from "path";
 import url from "url";
 import {Logger, toHtml} from "sambal";
@@ -9,18 +9,21 @@ import {writeText, parseWebpackStatsEntrypoints, webpackCallback, mapJsEntryToWe
 import {RenderFunction, OUTPUT_FOLDER, JsMapping} from "./constants";
 import webpack from "webpack";
 import Asset from "./Asset";
+import {sitemap} from "./sitemap";
 
 type RouteRenderer = {
     match: (url: string) => Match<object>,
     render: RenderFunction
 };
 
+const CHANGE_FREQ_REGEX = /^(always|hourly|daily|weekly|monthly|yearly|never)$/;
+
 class Builder {
     private router: RouteRenderer[] = [];
     private log: Logger = new Logger({name: "Builder"});
     private asset: Asset;
 
-    constructor(private webpackConfig, asset$: Observable<any>) {
+    constructor(private baseUrl, private webpackConfig, asset$: Observable<any>) {
         this.asset = new Asset(asset$ ? asset$ : empty(), OUTPUT_FOLDER);
     }
 
@@ -87,6 +90,36 @@ class Builder {
         });
     }
 
+    private isDate(obj: any) {
+        return typeof(obj) === "object" && Object.getPrototypeOf(obj) === Date.prototype;
+    }
+
+    private parseSiteMapRoute() {
+        return pipe(
+            map((route: any) => {
+                if (typeof(route) === "string") {
+                    return {loc: route};
+                } else if (route.loc) {
+                    const validatedRoute: any = {loc: route.loc};
+                    if (this.isDate(route.lastmod)) {
+                        validatedRoute.lastmod = route.lastmod;
+                    }
+                    if (route.changefreq && CHANGE_FREQ_REGEX.test(route.changefreq)) {
+                        validatedRoute.changefreq = route.changefreq;
+                    }
+                    if (typeof(route.priority) === "number" && route.priority >= 0 && route.priority <= 1) {
+                        validatedRoute.priority = route.priority;
+                    }
+                    return validatedRoute;
+                }
+                this.log.warn("Ignoring invalid route from sitemap$.  Route is either a string or an url object.  See https://www.sitemaps.org/protocol.html for url properties");
+                this.log.warn(route);
+                return null;
+            }),
+            filter(d => d !== null)
+        );
+    }
+
     private routeUrl(jsMapping: JsMapping[]) {
         return pipe(
             mergeMap((link: any) => {
@@ -107,6 +140,7 @@ class Builder {
         );
     }
 
+    //TODO: after render, toSchemaOrg to render sitemap or atom feed
     private renderHtml(route, path, params, jsMapping: JsMapping[]) {
         return route
         .render({path: path, params: params})

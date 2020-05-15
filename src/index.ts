@@ -5,7 +5,6 @@ import TypeGenerator from "./TypeGenerator";
 import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
-// import chokidar from "chokidar";
 import shelljs from "shelljs";
 import {Logger} from "sambal";
 import Builder from "./Builder";
@@ -52,20 +51,6 @@ function makeSchema(type, output, cmd) {
     }
 }
 
-/*
-function startDevServer(files: string[], subscriber: Subscriber<unknown>) {
-    const watcher = chokidar.watch(files);
-    watcher.on('change', async (path) => {
-        console.log(`${path} changed!`);
-        const content = await loadContent(path);
-        subscriber.next(content);
-    });
-    setTimeout(() => {
-        console.log("starting server");
-        serveBundle();
-    }, START_SERVER_DELAY);
-}*/
-
 function serve() {
     const devServer = new DevServer(webpackConfig, 3000);
     try {
@@ -79,7 +64,7 @@ async function build() {
     log.info(`Cleaning ${OUTPUT_FOLDER}`);
     clean(OUTPUT_FOLDER);
     const config = require(`${process.cwd()}/${SAMBAL_CONFIG_FILE}`);
-    const builder = new Builder(webpackConfig, config.asset$);
+    const builder = new Builder(config.baseUrl, webpackConfig, config.asset$);
     try {
         await builder.start(config.sitemap$, config.routes);
     } catch (e) {

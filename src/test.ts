@@ -1,11 +1,12 @@
 
-const {render, template} = require("sambal");
+const {render, template, toHtml} = require("sambal");
 const {from} = require("rxjs");
 const {map} = require("rxjs/operators");
 import path from "path";
 import webpack from "webpack";
 const config = require("../webpack.config.js");
 import Asset from "./Asset";
+import {sitemap} from "./sitemap";
 /*
 const renderBlogPost = ({headline}) => {
     return template`
@@ -45,17 +46,15 @@ function renderPage(obs) {
     });
 })();*/
 
+/*
 const source = from([
-    './bg.jpg',
+    // './bg.jpg',
     {
-        src: './bg.jpg',
-        dest: './bg-[hash].jpg',
-        alt: '123',
+        src: 'https://live.staticflickr.com/65535/49873609556_f31bf6e630_c_d.jpg',
+        dest: 'assets/flickr-[hash].jpg',
         responsive: [
             {
-                srcset: 'bg-470.jpg 480w',
-                sizes: '',
-                media: ''
+                srcset: 'assets/flickr-480-[hash].webp 480w, assets/flickr-320-[hash].webp 320w'
             }
         ]
     }
@@ -66,7 +65,15 @@ const source = from([
     await asset.init();
     await asset.generate();
 })();
+*/
 
+const source = from([
+    {loc: '/'},
+    {loc: '/about'},
+    {loc: '/faq'},
+    {loc: '/blogs'},
+    {loc: '/blogs/34k'},
+    {loc: '/landing'}
+]);
 
-
-
+sitemap("./public", "https://example.com", source);

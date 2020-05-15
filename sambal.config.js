@@ -26,6 +26,7 @@ function asset() {
 }
 
 module.exports = {
+    baseUrl: 'https://sambal.dev',
     routes: [
         {path: '/', render: landing},
         {path: '/about', render: landing},

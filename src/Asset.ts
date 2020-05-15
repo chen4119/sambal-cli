@@ -6,7 +6,7 @@ import {Observable, pipe, from} from "rxjs";
 import {mergeMap, mergeAll, map, toArray, filter} from "rxjs/operators";
 import sharp, { OutputInfo, Sharp } from "sharp";
 import {writeBuffer, isUrl} from "./utils";
-
+import axios from "axios";
 
 type AssetDef = {
     src: string,
@@ -40,6 +40,7 @@ class Asset {
     async init() {
         await this.parseAsset$();
         await this.getTransforms();
+        console.log(this.imageTransforms);
     }
 
     private async parseAsset$() {
@@ -111,31 +112,33 @@ class Asset {
         const transforms: ImageTransform[] = [];
         const sources = srcset.split(",");
         for (const source of sources) {
-            const splitted = source.split(/[ ]+/);
+            const splitted = source.trim().split(/[ ]+/);
             const dest = this.getDestPath(src, splitted[0]);
             if (!Asset.isValidAsset(dest)) {
                 this.log.warn(`Unsupported file format ${dest}`);
                 continue;
             }
             if (splitted.length === 2) {
-                if (splitted[1].endsWith("w")) {
+                const suffix = splitted[1];
+                if (suffix.endsWith("w")) {
                     transforms.push({
                         src: src,
                         dest: dest,
-                        width: Number(splitted[1].substring(0, splitted[1].length - 1))
+                        width: Number(suffix.substring(0, suffix.length - 1))
                     });
-                } else if (splitted[1].endsWith("x")) {
+                } else if (suffix.endsWith("x")) {
                     transforms.push({
                         src: src,
                         dest: dest,
-                        resolution: Number(splitted[1].substring(0, splitted[1].length - 1))
+                        resolution: Number(suffix.substring(0, suffix.length - 1))
                     });
                 } 
+            } else {
+                transforms.push({
+                    src: src,
+                    dest: dest
+                });
             }
-            transforms.push({
-                src: src,
-                dest: dest
-            });
         }
         return transforms;
     }
@@ -189,24 +192,34 @@ class Asset {
         return validSources;
     }
 
-    private getSource(src: string): string | Buffer {
+    private async getSource(src: string): Promise<string | Buffer> {
+        if (isUrl(src)) {
+            const response = await axios.get(src, {
+                responseType: 'arraybuffer'
+            });
+            return Buffer.from(response.data, 'binary');
+        }
         return src;
     }
 
     private async transformImage(src: string, dest: string, width?: number): Promise<{dest: string, buffer: Buffer}> {
-        return new Promise((resolve, reject) => {
-            let instance = sharp(this.getSource(src));
-            if (width) {
-                instance.resize(width, null);
-            }
-            instance = this.outputToFormat(instance, src, dest);
-            instance.toBuffer((err: Error, buffer: Buffer, info: OutputInfo) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve({dest: dest, buffer: buffer});
+        return new Promise(async (resolve, reject) => {
+            try {
+                let instance = sharp(await this.getSource(src));
+                if (width) {
+                    instance.resize(width, null);
                 }
-            });
+                instance = this.outputToFormat(instance, src, dest);
+                instance.toBuffer((err: Error, buffer: Buffer, info: OutputInfo) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve({dest: dest, buffer: buffer});
+                    }
+                });
+            } catch (e) {
+                reject(e);
+            }
         });
     }
 
