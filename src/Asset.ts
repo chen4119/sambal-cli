@@ -72,14 +72,14 @@ class Asset {
     async generate() {
         return new Promise<void>((resolve, reject) => {
             from(this.imageTransforms)
-            .pipe(mergeMap(task => from([this.transformImage(task.src, task.dest, task.width)])))
+            .pipe(mergeMap(task => from([this.transformImage(task)])))
             .pipe(mergeAll(2))
             .pipe(mergeMap(transform => {
-                if (transform.dest.indexOf("[hash]") >= 0) {
+                if (transform.task.dest.indexOf("[hash]") >= 0) {
                     const hash = crypto.createHash('md5').update(transform.buffer).digest('hex');
-                    transform.dest = transform.dest.replace("[hash]", hash);
+                    transform.task.dest = transform.task.dest.replace("[hash]", hash);
                 }
-                return from([writeBuffer(transform.dest, transform.buffer)]);
+                return from([writeBuffer(transform.task.dest, transform.buffer)]);
             }))
             .pipe(mergeAll(2))
             .subscribe({
@@ -100,7 +100,7 @@ class Asset {
         const normalizedPath = path.normalize(path.join(this.outputFolder, src));
         for (const transform of this.imageTransforms) {
             if (transform.dest === normalizedPath) {
-                const result = await this.transformImage(transform.src, transform.dest, transform.width);
+                const result = await this.transformImage(transform);
                 return result.buffer;
             }
         }
@@ -202,19 +202,19 @@ class Asset {
         return src;
     }
 
-    private async transformImage(src: string, dest: string, width?: number): Promise<{dest: string, buffer: Buffer}> {
+    private async transformImage(task: ImageTransform): Promise<{task: ImageTransform, buffer: Buffer}> {
         return new Promise(async (resolve, reject) => {
             try {
-                let instance = sharp(await this.getSource(src));
-                if (width) {
-                    instance.resize(width, null);
+                let instance = sharp(await this.getSource(task.src));
+                if (task.width) {
+                    instance.resize(task.width, null);
                 }
-                instance = this.outputToFormat(instance, src, dest);
+                instance = this.outputToFormat(instance, task.src, task.dest);
                 instance.toBuffer((err: Error, buffer: Buffer, info: OutputInfo) => {
                     if (err) {
                         reject(err);
                     } else {
-                        resolve({dest: dest, buffer: buffer});
+                        resolve({task: task, buffer: buffer});
                     }
                 });
             } catch (e) {

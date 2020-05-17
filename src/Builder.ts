@@ -1,5 +1,5 @@
-import {Observable, pipe, empty, forkJoin, of} from "rxjs";
-import {mergeMap, share, map, filter} from "rxjs/operators";
+import {Observable, Subject, pipe, empty, forkJoin, of} from "rxjs";
+import {mergeMap, tap, map, filter} from "rxjs/operators";
 import path from "path";
 import url from "url";
 import {Logger, toHtml} from "sambal";
@@ -19,11 +19,15 @@ type RouteRenderer = {
 const CHANGE_FREQ_REGEX = /^(always|hourly|daily|weekly|monthly|yearly|never)$/;
 
 class Builder {
-    private router: RouteRenderer[] = [];
-    private log: Logger = new Logger({name: "Builder"});
+    private router: RouteRenderer[];
+    private log: Logger;
     private asset: Asset;
+    private siteMapSubject: Subject<any>;
 
     constructor(private baseUrl, private webpackConfig, asset$: Observable<any>) {
+        this.log = new Logger({name: "Builder"});
+        this.router = [];
+        this.siteMapSubject = new Subject();
         this.asset = new Asset(asset$ ? asset$ : empty(), OUTPUT_FOLDER);
     }
 
@@ -32,9 +36,11 @@ class Builder {
         await this.asset.init();
         await this.asset.generate();
         const jsMapping = await this.bundle();
+        sitemap(OUTPUT_FOLDER, this.baseUrl, this.siteMapSubject);
         let count = 0;
         return new Promise<void>((resolve, reject) => {
             sitemap$
+            .pipe(this.parseSiteMapRoute())
             .pipe(this.routeUrl(jsMapping))
             .pipe(this.outputHtml())
             .subscribe({
@@ -44,6 +50,7 @@ class Builder {
                 },
                 complete: () => {
                     this.log.info(`Generated ${count} pages`);
+                    this.siteMapSubject.complete();
                     resolve();
                 },
                 error: (err) => {
@@ -123,19 +130,19 @@ class Builder {
     private routeUrl(jsMapping: JsMapping[]) {
         return pipe(
             mergeMap((link: any) => {
-                const url = this.getUrl(link);
                 for (const route of this.router) {
-                    const result = route.match(url);
+                    const result = route.match(link.loc);
                     if (result) {
-                        this.log.info(`Rendering ${url}`);
+                        this.siteMapSubject.next(link);
+                        this.log.info(`Rendering ${link.loc}`);
                         return forkJoin({
-                            uri: of(url),
+                            uri: of(link.loc),
                             html: this.renderHtml(route, result.path, result.params, jsMapping)
                         })
                     }
                 }
-                this.log.warn(`No route found for ${url}`);
-                return empty()
+                this.log.warn(`No route found for ${link.loc}`);
+                return empty();
             })
         );
     }
@@ -164,13 +171,6 @@ class Builder {
                 return await this.write(path.join(OUTPUT_FOLDER, uriPath), d.html);
             })
         );
-    }
-
-    private getUrl(route: any) {
-        if (typeof(route) === "object") {
-            return route.url;
-        }
-        return route;
     }
 
     private async write(dest: string, content: string) {

@@ -2,37 +2,39 @@ import {template, render, paginate, toHtml} from "sambal";
 import {forkJoin, of, empty} from "rxjs";
 import {bufferCount, mergeMap, toArray} from "rxjs/operators";
 import {writeText} from "./utils";
-import path from "path";
+
 
 // <lastmod>2005-01-01</lastmod>
-const siteMapEntry = (entry) => {
+const siteMapEntry = ({baseUrl, loc, lastmod, changefreq, priority}) => {
     return template`
         <url>
-            <loc>${entry.loc}</loc>
-            ${entry.lastmod ? `<changefreq>${entry.lastmod}</lastmod>` : null}
-            ${entry.changefreq ? `<changefreq>${entry.changefreq}</changefreq>` : null}
-            ${entry.priority ? `<priority>${entry.priority}</priority>` : null}
+            <loc>${`${baseUrl}${loc}`}</loc>
+            ${lastmod ? `<changefreq>${lastmod}</lastmod>` : null}
+            ${changefreq ? `<changefreq>${changefreq}</changefreq>` : null}
+            ${priority ? `<priority>${priority}</priority>` : null}
         </url>
     `;
 };
 
-const siteMapEntryList = ({items}) => {
-    return template`
-        <?xml version="1.0" encoding="UTF-8"?>
-        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-            ${items.map(entry => siteMapEntry(entry))}
-        </urlset> 
-    `;
+const siteMapEntryList = (baseUrl) => {
+    return ({items}) => {
+        return template`
+            <?xml version="1.0" encoding="UTF-8"?>
+            <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+                ${items.map(entry => siteMapEntry({baseUrl: baseUrl, ...entry}))}
+            </urlset> 
+        `;
+    }
 }
 
-const siteMapIndex = ({hostname, sitemaps}) => {
+const siteMapIndex = ({baseUrl, sitemaps}) => {
     return template`
         <?xml version="1.0" encoding="UTF-8"?>
         <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
         ${sitemaps.map(fileName => {
             return template`
                 <sitemap>
-                    <loc>${hostname}/${fileName}</loc>
+                    <loc>${baseUrl}/${fileName}</loc>
                     <lastmod>${new Date().toISOString()}</lastmod>
                 </sitemap>
             `;
@@ -41,11 +43,11 @@ const siteMapIndex = ({hostname, sitemaps}) => {
     `;
 }
 
-export function sitemap(outputFolder, hostname, sitemap$) {
+export function sitemap(outputFolder, baseUrl, sitemap$) {
     sitemap$
     .pipe(bufferCount(1000))
     .pipe(paginate())
-    .pipe(render(siteMapEntryList))
+    .pipe(render(siteMapEntryList(baseUrl)))
     .pipe(mergeMap(d => forkJoin({
         data: Promise.resolve(d),
         html: of(d).pipe(toHtml())
@@ -58,7 +60,7 @@ export function sitemap(outputFolder, hostname, sitemap$) {
     .pipe(toArray())
     .pipe(mergeMap((sitemaps: string[]) => {
         if (sitemaps.length > 1) {
-            return of({hostname: hostname, sitemaps: sitemaps})
+            return of({baseUrl: baseUrl, sitemaps: sitemaps})
             .pipe(render(siteMapIndex))
             .pipe(toHtml());
         }

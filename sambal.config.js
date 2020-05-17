@@ -21,7 +21,15 @@ function sitemap() {
 
 function asset() {
     return from([
-        './assets/bg.jpg'
+        {
+            src: './assets/bg.jpg',
+            dest: 'assets/bg.jpg',
+            responsive: [
+                {
+                    srcset: 'assets/bg-480.jpg 480w, assets/bg-320.jpg 320w'
+                }
+            ]
+        }
     ]);
 }
 
