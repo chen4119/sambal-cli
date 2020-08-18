@@ -24,7 +24,7 @@ class Builder {
     private asset: Asset;
     private siteMapSubject: Subject<any>;
 
-    constructor(private baseUrl, private webpackConfig, asset$: Observable<any>) {
+    constructor(private baseUrl: string, private webpackConfig?: any, asset$?: Observable<any>) {
         this.log = new Logger({name: "Builder"});
         this.router = [];
         this.siteMapSubject = new Subject();

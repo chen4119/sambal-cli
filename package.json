@@ -25,7 +25,8 @@
     "scripts": {
         "start": "ts-node src/index.ts build",
         "schema": "ts-node src/index.ts schema.org person test.yml",
-        "test": "ts-node src/test.ts",
+        "test": "jest",
+        "test:coverage": "jest --coverage",
         "validate": "ts-node src/schemaValidate.ts",
         "build": "npm run clean && tsc",
         "clean": "rimraf ./dist",
@@ -68,7 +69,7 @@
         "jquery": "3.5.1",
         "prismjs": "1.17.1",
         "rimraf": "3.0.0",
-        "sambal": "~0.0.33",
+        "sambal": "~0.0.34",
         "style-loader": "1.1.1",
         "tslint": "5.11.0",
         "ts-node": "7.0.1",

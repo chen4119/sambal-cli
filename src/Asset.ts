@@ -3,14 +3,14 @@ import path from "path";
 import url from "url";
 import {Logger} from "sambal";
 import {Observable, pipe, from} from "rxjs";
-import {mergeMap, mergeAll, map, toArray, filter} from "rxjs/operators";
+import {mergeMap, mergeAll, map, toArray, filter, tap} from "rxjs/operators";
 import sharp, { OutputInfo, Sharp } from "sharp";
 import {writeBuffer, isUrl} from "./utils";
 import axios from "axios";
 
 type AssetDef = {
     src: string,
-    alt?: string,
+    // alt?: string,
     dest?: string,
     responsive: {
         srcset: string,
@@ -22,7 +22,7 @@ type AssetDef = {
 
 type ImageTransform = {
     src: string,
-    dest: string,
+    dest?: string,
     width?: number,
     resolution?: number
 };
@@ -40,7 +40,10 @@ class Asset {
     async init() {
         await this.parseAsset$();
         await this.getTransforms();
-        console.log(this.imageTransforms);
+    }
+
+    get transforms() {
+        return this.imageTransforms;
     }
 
     private async parseAsset$() {
@@ -70,8 +73,7 @@ class Asset {
     }
 
     async generate() {
-        return new Promise<void>((resolve, reject) => {
-            from(this.imageTransforms)
+        return from(this.imageTransforms)
             .pipe(mergeMap(task => from([this.transformImage(task)])))
             .pipe(mergeAll(2))
             .pipe(mergeMap(transform => {
@@ -82,18 +84,8 @@ class Asset {
                 return from([writeBuffer(transform.task.dest, transform.buffer)]);
             }))
             .pipe(mergeAll(2))
-            .subscribe({
-                next: output => {
-                    this.log.info(`Emitted ${output}`);
-                },
-                complete: () => {
-                    resolve();
-                },
-                error: (err) => {
-                    reject(err);
-                }
-            });
-        });
+            .pipe(tap(output => this.log.info(`Emitted ${output}`)))
+            .toPromise();
     }
 
     async getAsset(src: string): Promise<Buffer> {

@@ -1,0 +1,42 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Asset has correct image transforms 1`] = `
+Array [
+  Object {
+    "dest": "tests/cache/dest/image1.jpg",
+    "src": "./tests/images/image1.png",
+  },
+  Object {
+    "dest": "tests/cache/dest/image1-480.jpg",
+    "src": "./tests/images/image1.png",
+    "width": 480,
+  },
+  Object {
+    "dest": "tests/cache/dest/image1-320.jpg",
+    "src": "./tests/images/image1.png",
+    "width": 320,
+  },
+  Object {
+    "dest": "tests/cache/tests/images/image1.png",
+    "src": "./tests/images/image1.png",
+  },
+  Object {
+    "dest": "tests/cache/tests/images/image2.jpg",
+    "src": "./tests/images/image2.jpg",
+  },
+  Object {
+    "dest": "tests/cache/assets/image2-480.jpg",
+    "src": "./tests/images/image2.jpg",
+    "width": 480,
+  },
+  Object {
+    "dest": "tests/cache/assets/image2-320.jpg",
+    "src": "./tests/images/image2.jpg",
+    "width": 320,
+  },
+  Object {
+    "dest": "tests/cache/tests/images/image2.jpg",
+    "src": "./tests/images/image2.jpg",
+  },
+]
+`;
