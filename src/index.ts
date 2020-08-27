@@ -13,20 +13,54 @@ import {OUTPUT_FOLDER, SAMBAL_CONFIG_FILE} from "./constants";
 
 const log = new Logger({name: "cli"});
 
-let webpackConfig = null;
+let serverWebpackConfig = null;
+let clientWebpackConfigs = [];
 const webpackConfigPath = `${process.cwd()}/webpack.config.js`;
+
 if (shelljs.test('-f', webpackConfigPath)) {
-    webpackConfig = require(webpackConfigPath);
-    if (!webpackConfig.entry) {
+    const webpackConfig = require(webpackConfigPath);
+    if (Array.isArray(webpackConfig)) {
+        webpackConfig.forEach(config => addWebpackConfig(config));
+    } else {
+        addWebpackConfig(webpackConfig);
+    }
+}
+
+function addWebpackConfig(config) {
+    if (normalizeWebpackConfig(config)){
+        if (isServerConfig(config)) {
+            serverWebpackConfig = config;
+        } else {
+            clientWebpackConfigs.push(config);
+        }
+    }
+}
+
+function isServerConfig(config) {
+    if (typeof(config.entry) === 'string') {
+        return config.entry.indexOf(SAMBAL_CONFIG_FILE) >= 0;
+    } else if (Array.isArray(config.entry)) {
+        for (let i = 0; i < config.entry.length; i++) {
+            if (config.entry[i].indexOf(SAMBAL_CONFIG_FILE) >= 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function normalizeWebpackConfig(config) {
+    if (!config.entry) {
         log.warn("No webpack entry specified");
-        webpackConfig = null;
+        return false;
     }
-    if (!webpackConfig.plugins) {
-        webpackConfig.plugins = [];
+    if (!config.plugins) {
+        config.plugins = [];
     }
-    if (!webpackConfig.output) {
-        webpackConfig.output = {};
+    if (!config.output) {
+        config.output = {};
     }
+    return true;
 }
 
 function makeSchema(type, output, cmd) {
@@ -52,7 +86,7 @@ function makeSchema(type, output, cmd) {
 }
 
 function serve() {
-    const devServer = new DevServer(webpackConfig, 3000);
+    const devServer = new DevServer(serverWebpackConfig, clientWebpackConfigs, 3000);
     try {
         devServer.start();
     } catch (e) {
@@ -64,7 +98,7 @@ async function build() {
     log.info(`Cleaning ${OUTPUT_FOLDER}`);
     clean(OUTPUT_FOLDER);
     const config = require(`${process.cwd()}/${SAMBAL_CONFIG_FILE}`);
-    const builder = new Builder(config.baseUrl, webpackConfig, config.asset$);
+    const builder = new Builder(config.baseUrl, serverWebpackConfig, config.asset$);
     try {
         await builder.start(config.sitemap$, config.routes);
     } catch (e) {

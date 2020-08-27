@@ -1,5 +1,5 @@
 
-const {of, from} = require("rxjs");
+const {of, from, empty} = require("rxjs");
 const {render} = require("sambal");
 const {renderBlogPost} = require("./js/render");
 
@@ -20,6 +20,7 @@ function sitemap() {
 }
 
 function asset() {
+    /* TODO: What if src doesn't exist??  Handle error
     return from([
         {
             src: './assets/bg.jpg',
@@ -30,7 +31,8 @@ function asset() {
                 }
             ]
         }
-    ]);
+    ]);*/
+    return empty();
 }
 
 module.exports = {
