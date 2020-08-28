@@ -4,7 +4,7 @@ import {WebpackEvent} from "./constants";
 
 class WebpackListenerPlugin {
     private emitted$: Subject<WebpackEvent> = new Subject<WebpackEvent>();
-    constructor(private publicPath: string, private webpackConfig: any) {
+    constructor(private webpackConfig: any) {
         
     }
 
@@ -17,7 +17,7 @@ class WebpackListenerPlugin {
             const info = stats.toJson();
             this.emitted$.next({
                 type: "bundle",
-                entries: parseWebpackStatsEntrypoints({publicPath: this.publicPath}, info.entrypoints),
+                entries: parseWebpackStatsEntrypoints(stats.toJson()),
                 webpackConfig: this.webpackConfig
             });
         });

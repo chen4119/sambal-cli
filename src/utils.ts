@@ -68,12 +68,17 @@ export function substituteJsPath(jsMapping: JsMapping[], src: string) {
     return src;
 }
 
-export function parseWebpackStatsEntrypoints(output, entrypoints): WebpackEntrypoints {
+export function parseWebpackStatsEntrypoints(stats): WebpackEntrypoints {
     const entries = {};
-    for (const key of Object.keys(entrypoints)) {
-        const assetName = entrypoints[key].assets[0];
-
-        entries[key] = (output && output.publicPath) ?  path.normalize(`${output.publicPath}/${assetName}`) : `/${assetName}`;
+    for (const key of Object.keys(stats.entrypoints)) {
+        const assetName = stats.entrypoints[key].assets[0];
+        let outputPath = '';
+        if (stats.publicPath) {
+            outputPath = stats.publicPath;
+        } else if (stats.outputPath) {
+            outputPath = stats.outputPath;
+        }
+        entries[key] = (outputPath) ?  path.normalize(`${outputPath}/${assetName}`) : `/${assetName}`;
     }
     return entries;
 }

@@ -9,7 +9,7 @@ import shelljs from "shelljs";
 import {Logger} from "sambal";
 import Builder from "./Builder";
 import DevServer from "./DevServer";
-import {OUTPUT_FOLDER, SAMBAL_CONFIG_FILE} from "./constants";
+import {OUTPUT_FOLDER, SAMBAL_CONFIG_FILE, CACHE_FOLDER} from "./constants";
 
 const log = new Logger({name: "cli"});
 
@@ -86,6 +86,7 @@ function makeSchema(type, output, cmd) {
 }
 
 function serve() {
+    clean(CACHE_FOLDER);
     const devServer = new DevServer(serverWebpackConfig, clientWebpackConfigs, 3000);
     try {
         devServer.start();
@@ -97,10 +98,10 @@ function serve() {
 async function build() {
     log.info(`Cleaning ${OUTPUT_FOLDER}`);
     clean(OUTPUT_FOLDER);
-    const config = require(`${process.cwd()}/${SAMBAL_CONFIG_FILE}`);
-    const builder = new Builder(config.baseUrl, serverWebpackConfig, config.asset$);
+    clean(CACHE_FOLDER);
+    const builder = new Builder(serverWebpackConfig, clientWebpackConfigs);
     try {
-        await builder.start(config.sitemap$, config.routes);
+        await builder.start();
     } catch (e) {
         log.error(e);
     }

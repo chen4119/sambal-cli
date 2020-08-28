@@ -3,7 +3,7 @@ import {mergeMap, tap, map, filter} from "rxjs/operators";
 import path from "path";
 import url from "url";
 import {Logger, toHtml} from "sambal";
-import {Route, WebpackEntrypoints} from "./constants";
+import {Route, WebpackEntrypoints, SAMBAL_CONFIG_FILE, DEFAULT_SERVER_WEBPACK_CONFIG} from "./constants";
 import {match, Match} from "path-to-regexp";
 import {writeText, parseWebpackStatsEntrypoints, webpackCallback, mapJsEntryToWebpackOutput, substituteJsPath} from "./utils";
 import {RenderFunction, OUTPUT_FOLDER, JsMapping} from "./constants";
@@ -22,24 +22,23 @@ class Builder {
     private router: RouteRenderer[];
     private log: Logger;
     private asset: Asset;
+    private sambalConfig;
     private siteMapSubject: Subject<any>;
 
-    constructor(private baseUrl: string, private webpackConfig?: any, asset$?: Observable<any>) {
+    constructor(private serverWebpackConfig, private clientWebpackConfigs: any[]) {
         this.log = new Logger({name: "Builder"});
         this.router = [];
         this.siteMapSubject = new Subject();
-        this.asset = new Asset(asset$ ? asset$ : empty(), OUTPUT_FOLDER);
     }
 
-    async start(sitemap$: Observable<any>, routes: Route[]) {
-        this.buildRouter(routes);
-        await this.asset.init();
-        await this.asset.generate();
+    async start() {
+        await this.loadSambalConfig();
+        this.buildRouter(this.sambalConfig.routes);
         const jsMapping = await this.bundle();
-        sitemap(OUTPUT_FOLDER, this.baseUrl, this.siteMapSubject);
+        sitemap(OUTPUT_FOLDER, this.sambalConfig.baseUrl, this.siteMapSubject);
         let count = 0;
         return new Promise<void>((resolve, reject) => {
-            sitemap$
+            this.sambalConfig.sitemap$
             .pipe(this.parseSiteMapRoute())
             .pipe(this.routeUrl(jsMapping))
             .pipe(this.outputHtml())
@@ -75,20 +74,47 @@ class Builder {
         });
     }
 
-    private async bundle(): Promise<JsMapping[]> {
-        if (!this.webpackConfig) {
-            return [];
+    private async loadSambalConfig() {
+        const configFile = `${process.cwd()}/${SAMBAL_CONFIG_FILE}`;
+        let config: any = {
+            mode: 'production',
+            entry: configFile,
+            ...DEFAULT_SERVER_WEBPACK_CONFIG
+        };
+        if (this.serverWebpackConfig) {
+            config = {
+                ...this.serverWebpackConfig,
+                mode: 'production',
+                ...DEFAULT_SERVER_WEBPACK_CONFIG
+            };
         }
-        const output = await this.build();
-        return mapJsEntryToWebpackOutput(this.webpackConfig.entry, output);
+        const entrypoints = await this.build(config);
+        this.sambalConfig = require(entrypoints.main);
+
+        this.asset = new Asset(this.sambalConfig.asset$ ? this.sambalConfig.asset$ : empty(), OUTPUT_FOLDER);
+        await this.asset.init();
+        await this.asset.generate();
     }
 
-    private async build() {
+    private async bundle(): Promise<JsMapping[]> {
+        let jsMapping: JsMapping[] = [];
+        for (let i = 0; i < this.clientWebpackConfigs.length; i++) {
+            const webpackConfig = {
+                ...this.clientWebpackConfigs[i],
+                mode: 'production'
+            };
+            const entrypoints = await this.build(webpackConfig);
+            jsMapping = jsMapping.concat(mapJsEntryToWebpackOutput(webpackConfig.entry, entrypoints));
+        }
+        return jsMapping;
+    }
+
+    private async build(webpackConfig) {
         return new Promise<WebpackEntrypoints>((resolve, reject) => {
-            const compiler = webpack(this.webpackConfig);
+            const compiler = webpack(webpackConfig);
             compiler.run(webpackCallback((err, stats) => {
                 if (!err) {
-                    const entrypoints = parseWebpackStatsEntrypoints(this.webpackConfig.output, stats.entrypoints);
+                    const entrypoints = parseWebpackStatsEntrypoints(stats);
                     resolve(entrypoints);
                 } else {
                     reject(err);

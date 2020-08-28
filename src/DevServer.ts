@@ -3,13 +3,10 @@ import {Subject, from, pipe, empty} from "rxjs";
 import {mergeAll, map} from "rxjs/operators";
 import {Logger, toHtml} from "sambal";
 import webpack from "webpack";
-import path from "path";
-import shelljs from "shelljs";
 import webpackDevMiddleware from "webpack-dev-middleware";
 import {
     RenderFunction,
     SAMBAL_CONFIG_FILE,
-    CACHE_FOLDER,
     WebpackEvent,
     WEBSOCKET_ADDR,
     JsMapping,
@@ -32,7 +29,6 @@ class DevServer {
     private configReady$: Subject<WebpackEvent>;
     private compilerListeners: WebpackListenerPlugin[];
     private isServerStarted: boolean;
-    private isSambalBundled: boolean;
     private asset: Asset;
     private log: Logger;
     constructor(private serverWebpackConfig, private clientWebpackConfigs: any[], private port: Number) {
@@ -40,11 +36,9 @@ class DevServer {
         this.configReady$ = new Subject<WebpackEvent>();
         this.compilerListeners = [];
         this.isServerStarted = false;
-        this.isSambalBundled = false;
     }
 
     start() {
-        shelljs.rm("-rf", CACHE_FOLDER);
         this.expressApp = express();
         this.startWebSocket();
         this.onSambalConfigChanged();
@@ -72,9 +66,8 @@ class DevServer {
             poll: 1000
         }, webpackCallback(async (err, stats) => {
             if (!err) {
-                const entrypoints = parseWebpackStatsEntrypoints({publicPath: `/${CACHE_FOLDER}`}, stats.entrypoints);
-                const configPath = path.resolve(process.cwd(), `./${entrypoints.main}`);
-                this.sambalConfig = require(configPath);
+                const entrypoints = parseWebpackStatsEntrypoints(stats);
+                this.sambalConfig = require(entrypoints.main);
                 this.asset = new Asset(this.sambalConfig.asset$ ? this.sambalConfig.asset$ : empty(), PUBLIC_PATH);
                 await this.asset.init();
                 this.configReady$.next({
@@ -113,7 +106,7 @@ class DevServer {
                     ...this.clientWebpackConfigs[i].plugins
                 ]
             };
-            const listener = new WebpackListenerPlugin(PUBLIC_PATH, webpackConfig);
+            const listener = new WebpackListenerPlugin(webpackConfig);
             this.compilerListeners.push(listener);
             webpackConfig.plugins.push(listener);
             configs.push(webpackConfig);
