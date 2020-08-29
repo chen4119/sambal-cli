@@ -11,6 +11,10 @@ css/
 *.md
 sambal.config.js
 webpack.config.js
+webpack.client.js
+webpack.server.js
 babel.config.js
 jest.config.js
 assets/
+tests/
+coverage/
