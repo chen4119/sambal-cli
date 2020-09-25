@@ -1,6 +1,6 @@
 src/
 tsconfig.json
-tslint.json
+.eslintrc.js
 .sambal/
 public/
 js/
@@ -9,6 +9,7 @@ css/
 *.yml
 *.css
 *.md
+*.log
 sambal.config.js
 webpack.config.js
 webpack.client.js

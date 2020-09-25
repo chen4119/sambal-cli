@@ -65,17 +65,3 @@ npx sambal build
 ```sh
 npx sambal serve
 ```
-
-## Generate schema.org boilerplate type in yaml or json format
-
-```sh
-npx sambal schema.org <schema.org type> <output file> [-f, --full]
-```
-
-For example,
-
-```sh
-npx sambal schema.org person person.yml
-
-npx sambal schema.org blogposting blog.json
-```

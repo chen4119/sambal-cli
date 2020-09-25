@@ -1,10 +1,5 @@
 import program from "commander";
 import {version} from "../package.json";
-import {getSchemaOrgType, isSchemaOrgType, SCHEMA_CONTEXT, SAMBAL_ID} from "sambal-jsonld";
-import TypeGenerator from "./TypeGenerator";
-import fs from "fs";
-import path from "path";
-import yaml from "js-yaml";
 import shelljs from "shelljs";
 import {Logger} from "sambal";
 import Builder from "./Builder";
@@ -63,6 +58,7 @@ function normalizeWebpackConfig(config) {
     return true;
 }
 
+/*
 function makeSchema(type, output, cmd) {
     const ext = path.extname(output).toLowerCase();
     if (ext !== ".yaml" && ext !== ".yml" && ext !== ".json") {
@@ -83,7 +79,7 @@ function makeSchema(type, output, cmd) {
     } else {
         log.error(`${type} not found`);
     }
-}
+}*/
 
 function serve() {
     clean(CACHE_FOLDER);
@@ -111,11 +107,13 @@ function clean(folder: string) {
     shelljs.rm("-rf", folder);
 }
 
+/*
 program
 .command(`schema.org <type> <output>`)
 .description('Create schema.org json or yaml file.  -f, --full for full schema')
 .option("-f, --full", "Full schema")
 .action(makeSchema);
+*/
 
 program
 .command(`build`)

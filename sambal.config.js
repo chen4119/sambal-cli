@@ -1,21 +1,30 @@
 
 const {of, from, empty} = require("rxjs");
-const {render} = require("sambal");
-const {renderBlogPost} = require("./js/render");
+const {render, template} = require("sambal");
 
-function landing({path, params}) {
+const mockRender = ({path, params}) => {
+    return template`
+    <!DOCTYPE html>
+        <html>
+            <body>
+                <h1>${path}</h1>
+                ${params ? Object.keys(params).map(key => template`<p>${key}=${params[key]}</p>`) : null}
+            </body>
+        </html>
+    `;
+};
+
+function renderer({path, params}) {
     return of({
-        url: "https://chen4119.me",
-        headline: 'headline',
-        text: 'hello world'
-    }).pipe(render(renderBlogPost));
+        path: path,
+        params: params
+    }).pipe(render(mockRender));
 }
 
 function sitemap() {
     return from([
-        '/',
-        '/about',
-        '/user/chen4119',
+        "/about",
+        "/user/chen"
     ]);
 }
 
@@ -36,11 +45,10 @@ function asset() {
 }
 
 module.exports = {
-    baseUrl: 'https://sambal.dev',
-    routes: [
-        {path: '/', render: landing},
-        {path: '/about', render: landing},
-        {path: '/user/:username', render: landing}
+    baseUrl: "https://example.com",
+    routes:  [
+        {path: "/about", render: renderer},
+        {path: "/user/:username", render: renderer}
     ],
     sitemap$: sitemap(),
     asset$: asset()

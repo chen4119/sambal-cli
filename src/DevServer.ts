@@ -48,20 +48,22 @@ class DevServer {
     private async watchSambalConfig() {
         const configFile = `${process.cwd()}/${SAMBAL_CONFIG_FILE}`;
         let config: any = {
-            mode: 'development',
+            mode: "development",
+            devtool: "eval-source-map",
             entry: configFile,
             ...DEFAULT_SERVER_WEBPACK_CONFIG
         };
         if (this.serverWebpackConfig) {
             config = {
                 ...this.serverWebpackConfig,
-                mode: 'development',
+                mode: "development",
+                devtool: "eval-source-map",
                 ...DEFAULT_SERVER_WEBPACK_CONFIG
             };
         }
         const compiler = webpack(config);
         
-        const watching = compiler.watch({
+        compiler.watch({
             aggregateTimeout: 300,
             poll: 1000
         }, webpackCallback(async (err, stats) => {
@@ -97,7 +99,8 @@ class DevServer {
         for (let i = 0; i < this.clientWebpackConfigs.length; i++) {
             const webpackConfig = {
                 ...this.clientWebpackConfigs[i],
-                mode: 'development',
+                mode: "development",
+                devtool: "eval-source-map",
                 output: {
                     ...this.clientWebpackConfigs[i].output,
                     publicPath: PUBLIC_PATH
