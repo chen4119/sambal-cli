@@ -48,7 +48,8 @@ module.exports = {
     baseUrl: "https://example.com",
     routes:  [
         {path: "/about", render: renderer},
-        {path: "/user/:username", render: renderer}
+        {path: "/user/:username", render: renderer},
+        {path: "*", render: renderer}
     ],
     sitemap$: sitemap(),
     asset$: asset()

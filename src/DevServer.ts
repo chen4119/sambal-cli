@@ -12,8 +12,13 @@ import {
     JsMapping,
     DEFAULT_SERVER_WEBPACK_CONFIG
 } from "./constants";
-import {parseWebpackStatsEntrypoints, webpackCallback, mapJsEntryToWebpackOutput, substituteJsPath} from "./utils";
-import {match, Match} from "path-to-regexp";
+import {
+    parseWebpackStatsEntrypoints,
+    webpackCallback,
+    mapJsEntryToWebpackOutput,
+    substituteJsPath,
+    getRouteMatcher
+} from "./utils";
 import WebpackListenerPlugin from "./WebpackListenerPlugin";
 import WebSocket from "ws";
 import Asset from "./Asset";
@@ -133,16 +138,20 @@ class DevServer {
         } else if (Array.isArray(this.sambalConfig.routes)) {
             let isRendered = false;
             for (const route of this.sambalConfig.routes) {
-                const matcher = match(route.path);
-                const result = matcher(req.path);
-                if (result) {
-                    isRendered = true;
-                    try {
-                        await this.renderPage(result.path, result.params, route.render, res);
-                    } catch (e) {
-                        res.status(500).send(e.toString());
+                try {
+                    const matcher = getRouteMatcher(route.path);
+                    const result = matcher(req.path);
+                    if (result) {
+                        isRendered = true;
+                        try {
+                            await this.renderPage(result.path, result.params, route.render, res);
+                        } catch (e) {
+                            res.status(500).send(e.toString());
+                        }
+                        break;
                     }
-                    break;
+                } catch (e) {
+                    this.log.error(e);
                 }
             }
             if (!isRendered) {
@@ -177,22 +186,29 @@ class DevServer {
     private addBrowserSyncScript() {
         const browserSync = `
         <script>
-            const ws = new WebSocket("${WEBSOCKET_ADDR}");
+            function openSocket() {
+                const sambalws = new WebSocket("${WEBSOCKET_ADDR}");
 
-            ws.onopen = function() {
-                console.log('Sambal dev server connected');
-            };
-            
-            ws.onmessage = function(e) {
-                if (e.data === "${CMD_REFRESH}") {
-                    console.log('Reloading...');
-                    window.location.reload();
+                sambalws.onopen = function() {
+                    console.log('Sambal dev server connected');
+                };
+                
+                sambalws.onmessage = function(e) {
+                    if (e.data === "${CMD_REFRESH}") {
+                        console.log('Reloading...');
+                        window.location.reload();
+                    }
                 }
+    
+                sambalws.onclose = function(e) {
+                    console.log("Sambal dev server disconnected");
+                    setTimeout(() => {
+                        openSocket();
+                    }, 2000);
+                };
             }
 
-            ws.onclose = function(e) {
-                console.log("Sambal dev server disconnected");
-            };
+            openSocket();
         </script>`;
 
         return pipe(
@@ -255,7 +271,7 @@ class DevServer {
         this.onJsBundleChanged();
         this.expressApp.get('/*', this.route.bind(this));
         this.expressApp.listen(this.port, () => {
-            this.log.info(`Dev server started on port ${this.port}`);
+            this.log.info("Dev server started on port %i", this.port);
         });
     }
 }

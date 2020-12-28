@@ -84,7 +84,7 @@ class Asset {
                 return from([writeBuffer(transform.task.dest, transform.buffer)]);
             }))
             .pipe(mergeAll(2))
-            .pipe(tap(output => this.log.info(`Emitted ${output}`)))
+            .pipe(tap(output => this.log.info("Emitted %s", output)))
             .toPromise();
     }
 
@@ -107,7 +107,7 @@ class Asset {
             const splitted = source.trim().split(/[ ]+/);
             const dest = this.getDestPath(src, splitted[0]);
             if (!Asset.isValidAsset(dest)) {
-                this.log.warn(`Unsupported file format ${dest}`);
+                this.log.warn("Unsupported file format: %s", dest);
                 continue;
             }
             if (splitted.length === 2) {
@@ -160,8 +160,7 @@ class Asset {
                             this.parseResponsiveConfig(asset.responsive) : []
                     };
                 }
-                this.log.warn("Ignore asset, unsupported src");
-                this.log.warn(asset);
+                this.log.warn("Ignore asset, unsupported src: %j", asset);
             }),
             filter(d => d !== null)
         );
@@ -177,8 +176,7 @@ class Asset {
             if (source.srcset) {
                 validSources.push({...source});
             } else {
-                this.log.warn("Ignore responsive source config, no srcset found");
-                this.log.warn(source);
+                this.log.warn("Ignore responsive source config, no srcset found: %j", source);
             }
         }
         return validSources;

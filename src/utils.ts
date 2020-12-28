@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import {WebpackEntrypoints, JsMapping} from "./constants";
 import {Logger} from "sambal";
+import {match} from "path-to-regexp";
 
 const log = new Logger({name: "Webpack"});
 
@@ -105,4 +106,20 @@ export function webpackCallback(callback) {
 
 export function isUrl(src: string) {
     return src.startsWith("http://") || src.startsWith("https://");
+}
+
+export function getRouteMatcher(route: string) {
+    try {
+        if (route === "*") {
+            // return matcher function that match any path
+            return (path: string) => ({
+                path: path,
+                params: null,
+                index: 0
+            });
+        }
+        return match(route);
+    } catch (e) {
+        throw new Error(`Invalid route path: ${route}`);
+    }
 }

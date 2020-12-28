@@ -1,18 +1,24 @@
-import {Observable, Subject, pipe, empty, forkJoin, of} from "rxjs";
+import {Subject, pipe, empty, forkJoin, of} from "rxjs";
 import {mergeMap, tap, map, filter} from "rxjs/operators";
 import path from "path";
 import url from "url";
 import {Logger, toHtml} from "sambal";
 import {Route, WebpackEntrypoints, SAMBAL_CONFIG_FILE, DEFAULT_SERVER_WEBPACK_CONFIG} from "./constants";
-import {match, Match} from "path-to-regexp";
-import {writeText, parseWebpackStatsEntrypoints, webpackCallback, mapJsEntryToWebpackOutput, substituteJsPath} from "./utils";
+import {
+    writeText,
+    parseWebpackStatsEntrypoints,
+    webpackCallback,
+    mapJsEntryToWebpackOutput,
+    substituteJsPath,
+    getRouteMatcher
+} from "./utils";
 import {RenderFunction, OUTPUT_FOLDER, JsMapping} from "./constants";
 import webpack from "webpack";
 import Asset from "./Asset";
 import {sitemap} from "./sitemap";
 
 type RouteRenderer = {
-    match: (url: string) => Match<object>,
+    match: (url: string) => false | {path: string, index: number, params?: unknown},
     render: RenderFunction
 };
 
@@ -45,10 +51,10 @@ class Builder {
             .subscribe({
                 next: d => {
                     count++;
-                    this.log.info(`Wrote ${d}`);
+                    this.log.info("Wrote %s", d);
                 },
                 complete: () => {
-                    this.log.info(`Generated ${count} pages`);
+                    this.log.info("Generated %i pages", count);
                     this.siteMapSubject.complete();
                     resolve();
                 },
@@ -63,7 +69,7 @@ class Builder {
         this.router = routes.map(r => {
             let matcher;
             try {
-                matcher = match(r.path);
+                matcher = getRouteMatcher(r.path);
             } catch (e) {
                 throw new Error(`Invalid route path: ${r.path}`);
             }
@@ -145,8 +151,7 @@ class Builder {
                     }
                     return validatedRoute;
                 }
-                this.log.warn("Ignoring invalid route from sitemap$.  Route is either a string or an url object.  See https://www.sitemaps.org/protocol.html for url properties");
-                this.log.warn(route);
+                this.log.warn("Invalid route from sitemap$.  Route is either a string or an url object.  See https://www.sitemaps.org/protocol.html for url properties: %j", route);
                 return null;
             }),
             filter(d => d !== null)
@@ -160,14 +165,14 @@ class Builder {
                     const result = route.match(link.loc);
                     if (result) {
                         this.siteMapSubject.next(link);
-                        this.log.info(`Rendering ${link.loc}`);
+                        this.log.info("Rendering %s", link.loc);
                         return forkJoin({
                             uri: of(link.loc),
                             html: this.renderHtml(route, result.path, result.params, jsMapping)
                         })
                     }
                 }
-                this.log.warn(`No route found for ${link.loc}`);
+                this.log.warn("No route found for %s", link.loc);
                 return empty();
             })
         );
